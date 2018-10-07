@@ -48,19 +48,30 @@ bool carMovementDown = true;
 
 class SolaireCar{
     private:
-        
+        void animateCar();
     public:
         // draw stuff
         void drawCar();
-        void animateCar();
 };
 
 void drawCar() {
+
+	animateCar();
+
+	glm::mat4 transMtx1 = glm::translate(glm::mat4(), glm::vec3(carPosition.x, 0, carPosition.z));
+	glMultMatrixf( &transMtx1[0][0] ); 
+
+	glm::mat4 rotMtx1 = glm::rotate(glm::mat4(), -carTheta, glm::vec3(0, 1.0f, 0));
+	glMultMatrixf( &rotMtx1[0][0]);
+
+	glm::mat4 rotMtx2 = glm::rotate(glm::mat4(), carMovement, glm::vec3(1.0f, 1.0f, 0));
+	glMultMatrixf( &rotMtx2[0][0]);
+
 	// disable lighting for use with primitives
 	glDisable( GL_LIGHTING );
 
-	glm::mat4 transMtx1 = glm::translate(glm::mat4(), glm::vec3(-6.25, 2.5, -2.5));
-	glMultMatrixf( &transMtx1[0][0] ); 
+	glm::mat4 transMtx2 = glm::translate(glm::mat4(), glm::vec3(-6.25, 2.5, -2.5));
+	glMultMatrixf( &transMtx2[0][0] ); 
 
 	// draw body of car
 	glBegin(GL_TRIANGLES);{
@@ -113,6 +124,8 @@ void drawCar() {
 		glVertex3f(0, 5, 0);
 		glVertex3f(0, 5, 5);
 	};glEnd();
+
+	glMultMatrixf( &( glm::inverse( transMtx2 ) )[0][0] );
 
 	glMultMatrixf( &( glm::inverse( transMtx1 ) )[0][0] );
 
