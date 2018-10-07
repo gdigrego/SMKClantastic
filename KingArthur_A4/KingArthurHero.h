@@ -5,7 +5,7 @@
 
 glm::mat4 identity = glm::mat4(1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1);
 float wheelPhi = 0;
-float wheelRadius = 3
+float wheelRadius = 3;
 
 void drawSeat() {
 	glColor3f(1, 0.2, 1);
