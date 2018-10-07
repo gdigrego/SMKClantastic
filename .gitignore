@@ -1,1 +1,6 @@
-*Makefile
+/Makefile
+
+SMK.exe
+main.o
+
+.*
