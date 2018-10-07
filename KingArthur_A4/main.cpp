@@ -32,6 +32,10 @@
 #include <stdio.h>			// for printf functionality
 #include <stdlib.h>			// for exit functionality
 #include <time.h>			  // for time() functionality
+
+#include "Kepler.h"
+#include "Hero.h"
+
 using namespace std;
 //*************************************************************************************
 //
@@ -66,6 +70,9 @@ int Sstate;
 int Dstate;
 bool hideCage;
 bool hideBezierCurve;
+
+//Initialize vehicles (?)
+Hero ds = new DarkSlayer();
 
 glm::mat4 identity = glm::mat4(1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1);
 //*************************************************************************************
@@ -443,6 +450,11 @@ void generateEnvironmentDL() {
 //		This method will contain all of the objects to be drawn.
 //
 void renderScene(void)  {
+	glm::mat4 transMtx = glm::translate(glm::mat4(), glm::vec3(0, 0, 10));
+	glMultMatrixf(&transMtx[0][0]);
+	ds.draw();
+	glMultMatrixf(&(glm::inverse(transMtx))[0][0]);
+	
 	glCallList(environmentDL);
 }
 
