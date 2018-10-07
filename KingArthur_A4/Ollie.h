@@ -2,7 +2,7 @@
  *  CSCI 441, Computer Graphics, Fall 2017
  *
  *  Project: A04
- *  File: Hero.h
+ *  File: Ollie.h
  *
  *	Author: Robert Imbler - Fall 2018
  *
