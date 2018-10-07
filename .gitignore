@@ -1,6 +1,4 @@
 /Makefile
-
-SMK.exe
-main.o
-
-.*
+*Makefile
+SMK
+*.o

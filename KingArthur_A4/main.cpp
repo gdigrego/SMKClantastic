@@ -27,6 +27,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <sstream>
 #include <math.h>				// for cos(), sin() functionality
 #include <stdio.h>			// for printf functionality
 #include <stdlib.h>			// for exit functionality
@@ -44,7 +45,6 @@ float PHI_MAX = M_PI;
 int leftMouseButton;    	 						// status of the mouse button
 glm::vec2 mousePos;			              		  	// last known X and Y of the mouse
 glm::vec3 vehiclePos, vehicleDir;                   // vehicle position and direction
-glm::vec3 faerieLocation;
 float arcballDistance; 
 //glm::vec3 camPos;            						// camera position in cartesian coordinates
 float cameraTheta, cameraPhi;               		// camera DIRECTION in spherical coordinates
@@ -56,8 +56,6 @@ GLuint environmentDL;                       		// display list for the 'city'
 std::vector<glm::vec3> controlPoints;
 float MAX_XZ = 50;
 float MIN_XZ = -50;
-int faerieSegment;
-int faerieStep;
 int curveResolution;
 
 // THIS IS GOING TO BE UGLY! (but we're in it together)
@@ -73,6 +71,52 @@ glm::mat4 identity = glm::mat4(1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1);
 //*************************************************************************************
 //
 // Helper Functions
+
+// loadControlPoints() /////////////////////////////////////////////////////////
+//
+//  Load our control points from file and store them in
+//	the global variable controlPoints
+//
+////////////////////////////////////////////////////////////////////////////////
+bool loadControlPoints(char* filename) {
+	ifstream fin(filename);
+	if (fin.fail()) return false;
+
+	//Find number of points
+	int numpoints;
+	string temp;
+	getline(fin, temp);
+	stringstream s(temp);
+	s >> numpoints;
+
+	if (numpoints % 16 != 0) {
+		fprintf(stdout, "Error: invalid number of points\n");
+		return false;
+	}
+
+	//Populate point vector
+	for (int i = 0; i < numpoints; i++) {
+		int x, y, z;
+		string line;
+		getline(fin, line);
+		stringstream t(line);
+		getline(t, temp, ',');
+		stringstream sx(temp);
+		sx >> x;
+		getline(t, temp, ',');
+		stringstream sy(temp);
+		sy >> y;
+		getline(t, temp);
+		stringstream sz(temp);
+		sz >> z;
+
+		glm::vec3 point(x, y, z);
+		controlPoints.push_back(point);
+	}
+
+	return true;
+}
+
 
 // getRand() ///////////////////////////////////////////////////////////////////
 //
@@ -105,6 +149,80 @@ void renderBezierSegment( glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d, gl
 	glVertex3f(p3.x, p3.y, p3.z);
 	glEnd();
 }
+
+// evaluateBezierCurve() ////////////////////////////////////////////////////////
+//
+// Computes a location along a Bezier Curve.
+//
+////////////////////////////////////////////////////////////////////////////////
+glm::vec3 evaluateBezierCurve(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, float t) {
+	glm::vec3 point(0, 0, 0);
+
+	point = p0 * (1 - t) * (1 - t) * (1 - t) + 3.0f * p1 * t * (1 - t) * (1 - t) + 3.0f * p2 * t * t * (1 - t) + p3 * t * t * t;
+
+	return point;
+}
+
+// renderBezierCurve() //////////////////////////////////////////////////////////
+//
+// Responsible for drawing a Bezier Curve as defined by four control points.
+//  Breaks the curve into n segments as specified by the resolution.
+//
+////////////////////////////////////////////////////////////////////////////////
+void renderBezierCurve(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, int resolution) {
+	glBegin(GL_LINE_STRIP);
+	for (int i = 0; i <= resolution; i++) {
+		glm::vec3 point = evaluateBezierCurve(p0, p1, p2, p3, 1.0f * i / resolution);
+		glVertex3f(point.x, point.y, point.z);
+	}
+
+	glEnd();
+}
+
+// evaluateBezierSurface() ////////////////////////////////////////////////////////
+//
+// Computes a location along a Bezier Surface.
+//
+////////////////////////////////////////////////////////////////////////////////
+glm::vec3 evaluateBezierSurface(vector<glm::vec3> points, float u, float v) {
+	glm::vec3 point(0, 0, 0);
+
+	point = evaluateBezierCurve(
+		evaluateBezierCurve(points.at(0), points.at(1), points.at(2), points.at(3), u),
+		evaluateBezierCurve(points.at(4), points.at(5), points.at(6), points.at(7), u),
+		evaluateBezierCurve(points.at(8), points.at(9), points.at(10), points.at(11), u),
+		evaluateBezierCurve(points.at(12), points.at(13), points.at(14), points.at(15), u),
+		v);
+
+	return point;
+}
+
+// renderBezierSurface() //////////////////////////////////////////////////////////
+//
+// Responsible for drawing a Bezier Surface as defined by 16 control points.
+//  Breaks the curve into n segments as specified by the resolution.
+//
+////////////////////////////////////////////////////////////////////////////////
+void renderBezierSurface(vector<glm::vec3> points, int resolution) {
+	glColor3f(.6, .6, .6);
+	for (int i = 0; i < resolution; i++) {
+		for (int j = 0; j < resolution; j++) {
+			glBegin(GL_TRIANGLE_STRIP);
+			glm::vec3 point1 = evaluateBezierSurface(points, 1.0f * i / resolution, 1.0f * j / resolution);
+			glm::vec3 point2 = evaluateBezierSurface(points, 1.0f * (i + 1) / resolution, 1.0f * j / resolution);
+			glm::vec3 point3 = evaluateBezierSurface(points, 1.0f * i / resolution, 1.0f * (j + 1) / resolution);
+			glm::vec3 point4 = evaluateBezierSurface(points, 1.0f * (i + 1) / resolution, 1.0f * (j + 1) / resolution);
+
+			glVertex3f(point1.x, point1.y, point1.z);
+			glVertex3f(point2.x, point2.y, point2.z);
+			glVertex3f(point3.x, point3.y, point3.z);
+			glVertex3f(point4.x, point4.y, point4.z);
+
+			glEnd();
+		}
+	}
+}
+
 
 float getRandRange(float lower, float upper) {
 	
@@ -230,6 +348,12 @@ static void mouse_button_callback( GLFWwindow *window, int button, int action, i
 	}
 }
 
+//Set a callback for scrolling the mouse wheel
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+	arcballDistance -= yoffset;
+	if (arcballDistance <= 0) arcballDistance = .01;
+}
+
 //*************************************************************************************
 //
 // Rendering / Drawing Functions - this is where the magic happens!
@@ -256,45 +380,11 @@ void drawGrid() {
 	glEnable( GL_LIGHTING );
 }
 
-// drawVehicle() //////////////////////////////////////////////////////////////////
-//
-//  Function to draw a random city using CSCI441 3D Cubes
-//
-////////////////////////////////////////////////////////////////////////////////
-void drawWheel(float wheelRadius) {
-	glm::mat4 rotMtx1 = glm::rotate(identity, wheelPhi, glm::vec3(0, 0, -1));
-	glMultMatrixf(&rotMtx1[0][0]);
-	CSCI441::drawSolidTorus(1, wheelRadius - 1, wheelRadius , 8);
-	glMultMatrixf(&(glm::inverse(rotMtx1))[0][0]);
-}
-void drawSeat() {
-	glColor3f(1, 0.2, 1);
-	glDisable(GL_LIGHTING);
-	glBegin(GL_TRIANGLES);
-	glVertex3f(0,3.8,2.5);
-	glVertex3f(1,4,-1);
-	glVertex3f(-1,4,-1);
-	glEnd();
-	glEnable(GL_LIGHTING);
-}
-void drawFaerie() {
-	glEnable(GL_LIGHTING);
-	glColor3f(0, 1, 0);
-	glm::mat4 rotMtx = glm::rotate(identity, faerieStep * 0.04f, faerieLocation);
-	glMultMatrixf(&rotMtx[0][0]);
-	CSCI441::drawSolidTeapot(0.5);
-	glm::mat4 scalMtx = glm::scale(identity, glm::vec3(0.2, 0.2, 0.3));
-	glMultMatrixf(&scalMtx[0][0]);
-	drawSeat();
-	glMultMatrixf(&(glm::inverse(scalMtx))[0][0]);
-	glMultMatrixf(&(glm::inverse(rotMtx))[0][0]);
-	glDisable(GL_LIGHTING);
-}
 void drawBezierCurve() {
 
 	if (!hideCage) {
 			glColor3f(0, 1, 0);
-		for (int i = 0; i < controlPoints.size(); i++) {
+		for (unsigned int i = 0; i < controlPoints.size(); i++) {
 			glm::mat4 transMtx = glm::translate(identity, controlPoints[i]);
 			glMultMatrixf(&transMtx[0][0]);
 			CSCI441::drawSolidSphere(0.4, 20, 20);
@@ -304,35 +394,19 @@ void drawBezierCurve() {
 		glColor3f(1, 1, 0);
 		glLineWidth(3.0f);
 		glBegin(GL_LINE_STRIP);
-		for (int i = 0; i < controlPoints.size(); i++) {
+		for (unsigned int i = 0; i < controlPoints.size(); i++) {
 			glVertex3f(controlPoints[i].x, controlPoints[i].y, controlPoints[i].z);
 		}
 		glEnd();
 	}
 	glColor3f(0, 0, 1);
-	for(int i = 0; i + 3 < controlPoints.size(); i+=3) {
+	for(unsigned int i = 0; i + 3 < controlPoints.size(); i+=3) {
 		vector<glm::vec3> bezierCoefficients = getCoefficients(
 			controlPoints[i],
 			controlPoints[i + 1],
 			controlPoints[i + 2],
 			controlPoints[i + 3]
 		);
-		if (i / 3 == faerieSegment) {
-			faerieLocation = evaluateBezierPoint(
-				bezierCoefficients[0],
-				bezierCoefficients[1],
-				bezierCoefficients[2],
-				bezierCoefficients[3],
-				faerieStep * 0.001
-			);
-			faerieStep++;
-			if (faerieStep * 0.001 > 1) {
-				faerieStep = 0;
-				faerieSegment++;
-				if (faerieSegment*3 > controlPoints.size() - 3) faerieSegment = 0;
-			}
-
-		}
 		if (!hideBezierCurve) {
 			renderBezierSegment(
 				bezierCoefficients[0],
@@ -344,32 +418,9 @@ void drawBezierCurve() {
 			);
 		}
 	}
-	glm::mat4 transMtx = glm::translate(identity, faerieLocation);
-	glMultMatrixf(&transMtx[0][0]);
-	drawFaerie();
-	glMultMatrixf(&(glm::inverse(transMtx))[0][0]);
 	glEnable(GL_LIGHTING);
 }
-void drawVehicle() {
 
-	float wheelRadius = 3;
-	
-	glm::mat4 transMtx1 = glm::translate(identity, vehiclePos);
-	glMultMatrixf(&transMtx1[0][0]);
-	glm::mat4 scalMtx = glm::scale(identity, glm::vec3(1.5, 1.5, 1.5));
-	glm::mat4 rotMtx = glm::rotate(identity, vehicleTheta + (float) M_PI/2, glm::vec3(0, -1, 0));
-	glMultMatrixf(&rotMtx[0][0]);
-	glMultMatrixf(&scalMtx[0][0]);
-	drawBezierCurve();
-	glMultMatrixf(&(glm::inverse(scalMtx))[0][0]);
-	glm::mat4 transMtx2 = glm::translate(identity, glm::vec3(0, wheelRadius, 0));
-	glMultMatrixf(&transMtx2[0][0]);
-	drawWheel(wheelRadius);
-	drawSeat();
-	glMultMatrixf(&(glm::inverse(rotMtx))[0][0]);
-	glMultMatrixf(&(glm::inverse(transMtx2))[0][0]);
-	glMultMatrixf(&(glm::inverse(transMtx1))[0][0]);
-}
 // generateEnvironmentDL() /////////////////////////////////////////////////////
 // This function creates a display list with the code to draw a simple
 //      environment for the user to navigate through.
@@ -382,8 +433,7 @@ void drawVehicle() {
 void generateEnvironmentDL() {
 	environmentDL = glGenLists(1);
 	glNewList(environmentDL, GL_COMPILE);
-	drawGrid();
-	//drawVehicle();
+	renderBezierSurface(controlPoints, curveResolution);
 	glEndList();
 }
 
@@ -393,7 +443,6 @@ void generateEnvironmentDL() {
 //		This method will contain all of the objects to be drawn.
 //
 void renderScene(void)  {
-	drawVehicle();
 	glCallList(environmentDL);
 }
 
@@ -441,6 +490,7 @@ GLFWwindow* setupGLFW() {
 	glfwSetKeyCallback( window, keyboard_callback );							// set our keyboard callback function
 	glfwSetCursorPosCallback( window, cursor_callback );					// set our cursor position callback function
 	glfwSetMouseButtonCallback( window, mouse_button_callback );	// set our mouse button callback function
+	glfwSetScrollCallback(window, scroll_callback);
 
 	return window;						       // return the window that was created
 }
@@ -524,9 +574,7 @@ void setupScene() {
 	cameraPhi = 2.37753;
 	wheelPhi = 0;
 	step_size = 0.01;
-	faerieSegment = 0;
-	faerieStep = 0;
-	curveResolution = 30;
+	curveResolution = 100;
 	hideBezierCurve = false;
 	hideCage = false;
 	recomputeVehicleDirection();
@@ -546,34 +594,22 @@ void setupScene() {
 //		Really you should know what this is by now.  We will make use of the parameters later
 //
 int main( int argc, char *argv[] ) {
-		// TODO #01: make sure a control point CSV file was passed in.  Then read the points from file
+	//Read in control points for curve from file
+	if (argc != 2) {
+		fprintf(stdout, "Error: must specify a data file\n");
+		return -1;
+	}
+
+	if (!loadControlPoints(argv[1])) {
+		fprintf(stdout, "Error: invalid data file\n");
+		return -1;
+	}
 	// GLFW sets up our OpenGL context so must be done first
 	// initialize all of the GLFW specific information releated to OpenGL and our window
 	GLFWwindow *window = setupGLFW();	// initialize all of the GLFW specific information releated to OpenGL and our window
 	setupOpenGL();					// initialize all of the OpenGL specific information
 	setupScene();					// initialize objects in our scene
-	if (argc != 2) {
-		cerr << "need a csv file" << endl;
-		return -1;
-	}
-	ifstream fin;
-	fin.open(argv[1]);
-	if (!fin) {
-		cerr << "error with file" << endl;
-		return -1;
-	}
-	int numPoints;
-	fin >> numPoints;
-	while (!fin.eof()) {
-		glm::vec3 vertex;
-		fin >> vertex.x;
-		fin.ignore();
-		fin >> vertex.y;
-		fin.ignore();
-		fin >> vertex.z;
-		controlPoints.push_back(vertex);
-	}
-	fin.close();
+	
 	// GLFW sets up our OpenGL context so must be done first
 	
 
