@@ -237,6 +237,13 @@ void renderBezierSurface(vector<glm::vec3> points, int resolution) {
 			glVertex3f(point3.x, point3.y, point3.z);
 			glVertex3f(point4.x, point4.y, point4.z);
 
+//			glm::vec3 t1 = point2 - point1;
+//			glm::vec3 t2 = point3 - point1;
+//
+//			glm::vec3 norm = glm::cross(t2, t1);
+//			glm::normalize(norm);
+//			glNormal3f(norm.x, norm.y, norm.z);
+
 			glEnd();
 		}
 	}
