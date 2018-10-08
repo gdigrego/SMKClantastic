@@ -76,6 +76,21 @@ glm::mat4 identity = glm::mat4(1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1);
 //
 // Helper Functions
 
+// setupLights()
+//
+// Set the types and colors of our lights
+//
+void setupLights() {
+    glEnable( GL_LIGHTING );            // we are now using lighting
+    glEnable( GL_LIGHT0 );              // and turn on Light 0 please (and thank you)
+    float diffuseCol[4] = { 1.0, 1.0, 1.0, 1.0 };           // white diffuse light
+    glLightfv( GL_LIGHT0, GL_DIFFUSE, diffuseCol );
+    float specularCol[4] = { 1.0, 1.0, 1.0, 1.0 };          // white specular light
+    glLightfv( GL_LIGHT0, GL_SPECULAR, specularCol );
+    float ambientCol[4] = { 0.2, 0.2, 0.2, 1.0 };           // soft gray ambient light
+    glLightfv( GL_LIGHT0, GL_AMBIENT, ambientCol );
+}
+
 // loadControlPoints() /////////////////////////////////////////////////////////
 //
 //  Load our control points from file and store them in
@@ -397,8 +412,10 @@ void drawBezierCurve() {
 		glDisable(GL_LIGHTING);
 		glColor3f(1, 1, 0);
 		glLineWidth(3.0f);
+
 		glBegin(GL_LINE_STRIP);
 		for (unsigned int i = 0; i < controlPoints.size(); i++) {
+
 			glVertex3f(controlPoints[i].x, controlPoints[i].y, controlPoints[i].z);
 		}
 		glEnd();
@@ -588,6 +605,8 @@ void setupScene() {
 	generateEnvironmentDL();
 }
 
+
+
 ///*************************************************************************************
 //
 // Our main function
@@ -652,6 +671,10 @@ int main( int argc, char *argv[] ) {
 										 glm::vec3(  0,  1,  0 ) );		// up vector is (0, 1, 0) - positive Y
 		// multiply by the look at matrix - this is the same as our view martix
 		glMultMatrixf( &viewMtx[0][0] );
+
+		// create position for light0 and set light0 to this position in scene
+		float lightPosition[4] = { 15.0, 15.0, 15.0, 1.0 };
+        glLightfv( GL_LIGHT0, GL_POSITION, lightPosition );
 
 		renderScene();					// draw everything to the window
 
