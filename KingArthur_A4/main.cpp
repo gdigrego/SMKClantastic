@@ -300,18 +300,29 @@ static void keyboard_callback( GLFWwindow *window, int key, int scancode, int ac
 	switch(key) {
 		case GLFW_KEY_W: {
 			Wstate = action;
+
+			vehiclePos.x += 1;
+
 			break;
 		}
 		case GLFW_KEY_A: {
 			Astate = action;
+
+			vehiclePos.z -= 1;
+
 			break;
 		}
 		case GLFW_KEY_S: {
 			Sstate = action;
+
+			vehiclePos.x -= 1;
+
 			break;
 		}
 		case GLFW_KEY_D: {
 			Dstate = action;
+
+			vehiclePos.z += 1;
 			break;
 		}
 		case GLFW_KEY_C: {
