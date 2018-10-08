@@ -32,6 +32,7 @@
 #include <stdio.h>			// for printf functionality
 #include <stdlib.h>			// for exit functionality
 #include <time.h>			  // for time() functionality
+#include "RacetrackInput.h"
 
 #include "Kepler.h"
 #include "Hero.h"
@@ -72,6 +73,18 @@ bool hideCage;
 bool hideBezierCurve;
 
 glm::mat4 identity = glm::mat4(1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1);
+
+// Rob's Filey bullshit
+char* filename; 
+int curveCount;               // number of bezier surfaces
+vector<glm::vec3> surface;     // all surface points
+int trackPoints;               // number of track control points
+vector<glm::vec3> track;       // track points
+vector<glm::vec3> objects;     // object locations
+char* objectType;               // object type - FIXME, there can be multiple object types!
+int numObjects;                // object count
+
+
 //*************************************************************************************
 //
 // Helper Functions
@@ -112,7 +125,7 @@ bool loadControlPoints(char* filename) {
 		fprintf(stdout, "Error: invalid number of points\n");
 		return false;
 	}
-
+	
 	//Populate point vector
 	for (int i = 0; i < numpoints; i++) {
 		int x, y, z;
@@ -470,9 +483,21 @@ void drawBezierCurve() {
 //
 ////////////////////////////////////////////////////////////////////////////////
 void generateEnvironmentDL() {
+	// rvi
 	environmentDL = glGenLists(1);
 	glNewList(environmentDL, GL_COMPILE);
-	renderBezierSurface(controlPoints, curveResolution);
+	for ( int i = 0; i < curveCount; i++ ){
+		// clear out existing CPs
+		controlPoints.clear();
+		for ( int j = 0; j < 16; j++ ){
+			// dump new control points in sets of 16 into CP
+			controlPoints.push_back(surface.at(16 * i + j));
+		}
+		// render the surface and repeat
+		renderBezierSurface(controlPoints, curveResolution);
+	}
+	// FIXME -- add track drawing here in addition
+	// FIXME -- add objects and shit here too
 	glEndList();
 }
 
@@ -641,9 +666,15 @@ int main( int argc, char *argv[] ) {
 		return -1;
 	}
 
-	if (!loadControlPoints(argv[1])) {
+	if (!loadRaceTrack(argv[1], &curveCount, &surface, &trackPoints, &track, &objects, objectType, &numObjects)) {
 		fprintf(stdout, "Error: invalid data file\n");
 		return -1;
+	}
+	else {
+		cout << "Curves: " << curveCount << endl;
+		cout << "Points: " << surface.size() << endl;
+		cout << "Tracks: " << trackPoints << endl; 
+		cout << "Points: " << track.size() << endl;
 	}
 	// GLFW sets up our OpenGL context so must be done first
 	// initialize all of the GLFW specific information releated to OpenGL and our window
