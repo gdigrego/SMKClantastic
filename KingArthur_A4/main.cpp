@@ -45,13 +45,13 @@ using namespace std;
 // global variables to keep track of window width and height.
 // set to initial values for convenience, but we need variables
 // for later on in case the window gets resized.
-int windowWidth = 640, windowHeight = 480;
+int windowWidth = 1280, windowHeight = 960;
 float PHI_MAX = M_PI;
 int leftMouseButton;    	 						// status of the mouse button
 glm::vec2 mousePos;			              		  	// last known X and Y of the mouse
 glm::vec3 vehiclePos, vehicleDir;                   // vehicle position and direction
 float arcballDistance; 
-//glm::vec3 camPos;            						// camera position in cartesian coordinates
+glm::vec3 camPos;            						// camera position in cartesian coordinates
 float cameraTheta, cameraPhi;               		// camera DIRECTION in spherical coordinates
 glm::vec3 camDir; 			                    	// camera DIRECTION in cartesian coordinates
 float vehicleTheta;
@@ -62,6 +62,9 @@ std::vector<glm::vec3> controlPoints;
 float MAX_XZ = 50;
 float MIN_XZ = -50;
 int curveResolution;
+int cameraType = 2;
+bool keysDown[256] = {0};
+glm::vec3 camAngles;
 
 // THIS IS GOING TO BE UGLY! (but we're in it together)
 int CtrlState;
@@ -289,6 +292,59 @@ void recomputeVehicleDirection() {
 	vehicleDir = glm::vec3(-sin(vehicleTheta), 0, cos(vehicleTheta));
 	glm::normalize(vehicleDir);
 }
+
+void animate() {
+    //because the direction vector is unit length, and we probably don't want
+    //to move one full unit every time a button is pressed, just create a constant
+    //to keep track of how far we want to move at each step. you could make
+    //this change w.r.t. the amount of time the button's held down for
+    //simple scale-sensitive movement!
+    const float movementConstant = 0.3f;
+
+    if( keysDown[ GLFW_KEY_SPACE ] ) {
+        //just move FORWARDS along the direction.
+        camPos.x += camDir.x * movementConstant;
+        camPos.y += camDir.y * movementConstant;
+        camPos.z += camDir.z * movementConstant;
+
+    }
+
+    if( keysDown[ GLFW_KEY_S ] ) {
+        camAngles.y += 0.01;
+
+        // make sure that phi stays within the range (0, M_PI)
+        if(camAngles.y <= 0)
+            camAngles.y = 0+0.001;
+        if(camAngles.y >= M_PI)
+            camAngles.y = M_PI-0.001;
+
+        recomputeOrientation();     //update camera (x,y,z) based on (radius,theta,phi)
+    }
+
+    if( keysDown[ GLFW_KEY_W ] ) {
+        camAngles.y -= 0.01;
+
+        // make sure that phi stays within the range (0, M_PI)
+        if(camAngles.y <= 0)
+            camAngles.y = 0+0.001;
+        if(camAngles.y >= M_PI)
+            camAngles.y = M_PI-0.001;
+
+        recomputeOrientation();     //update camera (x,y,z) based on (radius,theta,phi)
+    }
+
+    if( keysDown[ GLFW_KEY_D ] ) {
+        // turn right
+        camAngles.x += 0.01;
+        recomputeOrientation();     //update camera (x,y,z) based on (radius,theta,phi)
+    }
+
+    if( keysDown[ GLFW_KEY_A ] ) {
+        // turn left
+        camAngles.x -= 0.01;
+        recomputeOrientation();     //update camera (x,y,z) based on (radius,theta,phi)
+    }
+}
 //*************************************************************************************
 //
 // Event Callbacks
@@ -356,6 +412,14 @@ static void keyboard_callback( GLFWwindow *window, int key, int scancode, int ac
 		case GLFW_KEY_LEFT_CONTROL:
 		case GLFW_KEY_RIGHT_CONTROL: {
 			CtrlState = action;
+			break;
+		}
+		case GLFW_KEY_1: {
+			cameraType = 1;
+			break;
+		}
+		case GLFW_KEY_2: {
+			cameraType = 2;
 			break;
 		}
 	}
@@ -715,11 +779,22 @@ int main( int argc, char *argv[] ) {
 
 		// set up our look at matrix to position our camera
 		// TODO #6: Change how our lookAt matrix gets constructed
-		glm::mat4 viewMtx = glm::lookAt( camDir*arcballDistance + vehiclePos, // camera is located at camPos
-										 vehiclePos,		// camera is looking a point directly ahead
-										 glm::vec3(  0,  1,  0 ) );		// up vector is (0, 1, 0) - positive Y
-		// multiply by the look at matrix - this is the same as our view martix
-		glMultMatrixf( &viewMtx[0][0] );
+		if(cameraType == 1) {
+			glm::mat4 viewMtx = glm::lookAt( camDir*arcballDistance + vehiclePos, // camera is located at camPos
+											 vehiclePos,		// camera is looking a point directly ahead
+											 glm::vec3(  0,  1,  0 ) );		// up vector is (0, 1, 0) - positive Y
+
+			// multiply by the look at matrix - this is the same as our view martix
+					glMultMatrixf( &viewMtx[0][0] );
+		} else if(cameraType == 2) {
+			// set up our look at matrix to position our camera
+			glm::mat4 viewMtx = glm::lookAt( camPos,
+											 camPos + camDir,
+											 glm::vec3(  0,  1,  0 ) );
+
+			// multiply by the look at matrix - this is the same as our view martix
+					glMultMatrixf( &viewMtx[0][0] );
+		}
 
 		// create position for light0 and set light0 to this position in scene
 		float lightPosition[4] = { 15.0, 15.0, 15.0, 1.0 };
@@ -729,6 +804,9 @@ int main( int argc, char *argv[] ) {
 
 		glfwSwapBuffers(window);// flush the OpenGL commands and make sure they get rendered!
 		glfwPollEvents();				// check for any events and signal to redraw screen
+
+		animate();
+
 		updateScene();
 	}
 
