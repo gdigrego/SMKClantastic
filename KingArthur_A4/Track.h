@@ -25,6 +25,17 @@
 #include <vector>				// for vector
 using namespace std;
 
+int rainbowMax = 25;
+int rainbowRed = rainbowMax;
+int rainbowGreen = 0;
+int rainbowBlue = 0;
+
+
+/*NOTE:
+ * Before or after each FRAME, set rainbowRed to max and rainbowGreen/rainbowBlue to 0.
+ * The functions here can not do this or each curve will restart the color set.
+ */
+
 // Calculates tangent of a given point
 glm::vec3 evaluateBezierTangent(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, float t) {
 	glm::vec3 point(0, 0, 0);
@@ -32,6 +43,35 @@ glm::vec3 evaluateBezierTangent(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::v
 	point = -3.0f * (1 - t) * (1 - t) * p0 + 3.0f * (1 - t) * (1 - t) * p1 - 6.0f * t * (1 - t) * p1 - 3.0f * t * t * p2 + 6.0f * t * (1 - t) * p2 + 3.0f * t * t * p3;
 
 	return point;
+}
+
+//Set rainbow color gradient
+void rainbowUpdateColor() {
+	if (rainbowRed == rainbowMax) {
+		if (rainbowBlue > 0) rainbowBlue -= 1;
+		else if (rainbowGreen < rainbowMax) rainbowGreen += 1;
+		else rainbowRed -= 1;
+	}
+	else if (rainbowGreen == rainbowMax) {
+		if (rainbowRed > 0) rainbowRed -= 1;
+		else if (rainbowBlue < rainbowMax) rainbowBlue += 1;
+		else rainbowGreen -= 1;
+	}
+	else if (rainbowBlue == rainbowMax) {
+		if (rainbowGreen > 0) rainbowGreen -= 1;
+		else if (rainbowRed < rainbowMax) rainbowRed += 1;
+		else rainbowBlue -= 1;
+	}
+
+	glColor3f(1.0f * rainbowRed / rainbowMax, 1.0f * rainbowGreen / rainbowMax, 1.0f * rainbowBlue / rainbowMax);
+}
+
+//Reset color
+//CALL ONCE PER FRAME
+void resetColor() {
+	rainbowRed = rainbowMax;
+	rainbowBlue = 0;
+	rainbowGreen = 0;
 }
 
 //Draw surface
