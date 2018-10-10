@@ -13,7 +13,7 @@
 // include the OpenGL library header
 #ifdef __APPLE__					// if compiling on Mac OS
 	#include <OpenGL/gl.h>
-#else										// if compiling on Linux or Windows OS
+#else								// if compiling on Linux or Windows OS
 	#include <GL/gl.h>
 #endif
 
@@ -50,7 +50,7 @@ float PHI_MAX = M_PI;
 int leftMouseButton;    	 						// status of the mouse button
 glm::vec2 mousePos;			              		  	// last known X and Y of the mouse
 glm::vec3 vehiclePos, vehicleDir;                   // vehicle position and direction
-float arcballDistance; 
+float arcballDistance;
 glm::vec3 camPos;            						// camera position in cartesian coordinates
 float cameraTheta, cameraPhi;               		// camera DIRECTION in spherical coordinates
 glm::vec3 camDir; 			                    	// camera DIRECTION in cartesian coordinates
@@ -78,7 +78,7 @@ bool hideBezierCurve;
 glm::mat4 identity = glm::mat4(1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1);
 
 // Rob's Filey bullshit
-char* filename; 
+char* filename;
 int curveCount;               // number of bezier surfaces
 vector<glm::vec3> surface;     // all surface points
 int trackPoints;               // number of track control points
@@ -128,7 +128,7 @@ bool loadControlPoints(char* filename) {
 		fprintf(stdout, "Error: invalid number of points\n");
 		return false;
 	}
-	
+
 	//Populate point vector
 	for (int i = 0; i < numpoints; i++) {
 		int x, y, z;
@@ -173,7 +173,7 @@ glm::vec3 evaluateBezierPoint( glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 
 }
 void renderBezierSegment( glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d, glm::vec3 p3, int resolution) {
 	// NOTE: I thought it would be more efficient to compute these ONCE since they are the same for
-	// each evaluation, just as the slides suggest. 
+	// each evaluation, just as the slides suggest.
 	// They are the new parameters that evaluateBezierCurve takes in.
 	float dt = 1.0f/resolution;
 	glBegin(GL_LINE_STRIP);
@@ -267,7 +267,7 @@ void renderBezierSurface(vector<glm::vec3> points, int resolution) {
 
 
 float getRandRange(float lower, float upper) {
-	
+
 	return getRand()*(upper - lower) + lower;
 }
 // recomputeOrientation() //////////////////////////////////////////////////////
@@ -282,7 +282,7 @@ void recomputeOrientation() {
 		sin(cameraTheta)*sin(cameraPhi),
 		-cos(cameraPhi),
 		-cos(cameraTheta)*sin(cameraPhi));
-	
+
 	// and NORMALIZE this directional vector!!!
 	glm::normalize(camDir);
 	//camPos = arcballDistance*camDir + vehiclePos;
@@ -293,58 +293,10 @@ void recomputeVehicleDirection() {
 	glm::normalize(vehicleDir);
 }
 
-void animate() {
-    //because the direction vector is unit length, and we probably don't want
-    //to move one full unit every time a button is pressed, just create a constant
-    //to keep track of how far we want to move at each step. you could make
-    //this change w.r.t. the amount of time the button's held down for
-    //simple scale-sensitive movement!
-    const float movementConstant = 0.3f;
 
-    if( keysDown[ GLFW_KEY_SPACE ] ) {
-        //just move FORWARDS along the direction.
-        camPos.x += camDir.x * movementConstant;
-        camPos.y += camDir.y * movementConstant;
-        camPos.z += camDir.z * movementConstant;
 
-    }
 
-    if( keysDown[ GLFW_KEY_S ] ) {
-        camAngles.y += 0.01;
 
-        // make sure that phi stays within the range (0, M_PI)
-        if(camAngles.y <= 0)
-            camAngles.y = 0+0.001;
-        if(camAngles.y >= M_PI)
-            camAngles.y = M_PI-0.001;
-
-        recomputeOrientation();     //update camera (x,y,z) based on (radius,theta,phi)
-    }
-
-    if( keysDown[ GLFW_KEY_W ] ) {
-        camAngles.y -= 0.01;
-
-        // make sure that phi stays within the range (0, M_PI)
-        if(camAngles.y <= 0)
-            camAngles.y = 0+0.001;
-        if(camAngles.y >= M_PI)
-            camAngles.y = M_PI-0.001;
-
-        recomputeOrientation();     //update camera (x,y,z) based on (radius,theta,phi)
-    }
-
-    if( keysDown[ GLFW_KEY_D ] ) {
-        // turn right
-        camAngles.x += 0.01;
-        recomputeOrientation();     //update camera (x,y,z) based on (radius,theta,phi)
-    }
-
-    if( keysDown[ GLFW_KEY_A ] ) {
-        // turn left
-        camAngles.x -= 0.01;
-        recomputeOrientation();     //update camera (x,y,z) based on (radius,theta,phi)
-    }
-}
 //*************************************************************************************
 //
 // Event Callbacks
@@ -373,32 +325,75 @@ static void keyboard_callback( GLFWwindow *window, int key, int scancode, int ac
 				exit(EXIT_SUCCESS);
 		}
 	}
+
+	float step = 5.0f;
+
 	switch(key) {
 		case GLFW_KEY_W: {
 			Wstate = action;
 
-			vehiclePos.x += 1;
+			if(cameraType == 1) {
+				vehiclePos.x += 1;
+			} else if(cameraType == 2) {
+				camPos.x += camDir.x*step;
+				camPos.y += camDir.y*step;
+				camPos.z += camDir.z*step;
+			}
 
 			break;
 		}
 		case GLFW_KEY_A: {
 			Astate = action;
 
-			vehiclePos.z -= 1;
+			if(cameraType == 1) {
+				vehiclePos.z -= 1;
+			} else if(cameraType == 2) {
+				camPos.z -= 1;
+			}
 
 			break;
 		}
 		case GLFW_KEY_S: {
 			Sstate = action;
 
-			vehiclePos.x -= 1;
+			if(cameraType == 1) {
+				vehiclePos.x -= 1;
+			} else if(cameraType == 2) {
+				camPos.x -= camDir.x*step;
+				camPos.y -= camDir.y*step;
+				camPos.z -= camDir.z*step;
+			}
 
 			break;
 		}
 		case GLFW_KEY_D: {
 			Dstate = action;
 
-			vehiclePos.z += 1;
+			if(cameraType == 1) {
+				vehiclePos.z += 1;
+			} else if(cameraType == 2) {
+				camPos.z += 1;
+			}
+
+			break;
+		}
+		case GLFW_KEY_Z: {
+			Dstate = action;
+
+			if(cameraType == 2) {
+				camPos.y += 1;
+			}
+
+			break;
+		}
+
+		case GLFW_KEY_X: {
+			Dstate = action;
+
+			if(cameraType == 2) {
+				camPos.y -= 1;
+			}
+
 			break;
 		}
 		case GLFW_KEY_C: {
@@ -438,7 +433,7 @@ static void keyboard_callback( GLFWwindow *window, int key, int scancode, int ac
 static void cursor_callback( GLFWwindow *window, double x, double y ) {
 	if (leftMouseButton == GLFW_PRESS && keyisdown(CtrlState)) {
 		arcballDistance += (y - mousePos.y)*(0.005);
-	} 
+	}
 	else if( leftMouseButton == GLFW_PRESS ) {
 		cameraTheta += (x - mousePos.x)*(0.005);
 		cameraPhi -= (mousePos.y - y)*(0.005);
@@ -485,7 +480,7 @@ void drawGrid() {
 		glColor3f(0.5, 0.5, 1);
 		glVertex3d(i, 0, 50);
 		glVertex3d(i, 0, -50);
-		
+
 		glColor3f(1, 0.5, 0.5);
 		glVertex3d(50, 0, i);
 		glVertex3d(-50, 0, i);
@@ -700,6 +695,8 @@ void setupScene() {
 	vehicleTheta = 1;
 	cameraTheta = -M_PI / 3.0f;
 	cameraPhi = 2.37753;
+	camPos = glm::vec3(100, 250, 100);
+	camDir = camPos - glm::vec3(0, 0, 0);
 	wheelPhi = 0;
 	step_size = 0.01;
 	curveResolution = 100;
@@ -737,7 +734,7 @@ int main( int argc, char *argv[] ) {
 	else {
 		cout << "Curves: " << curveCount << endl;
 		cout << "Points: " << surface.size() << endl;
-		cout << "Tracks: " << trackPoints << endl; 
+		cout << "Tracks: " << trackPoints << endl;
 		cout << "Points: " << track.size() << endl;
 	}
 	// GLFW sets up our OpenGL context so must be done first
@@ -745,9 +742,9 @@ int main( int argc, char *argv[] ) {
 	GLFWwindow *window = setupGLFW();	// initialize all of the GLFW specific information releated to OpenGL and our window
 	setupOpenGL();					// initialize all of the OpenGL specific information
 	setupScene();					// initialize objects in our scene
-	
+
 	// GLFW sets up our OpenGL context so must be done first
-	
+
 
 	//  This is our draw loop - all rendering is done here.  We use a loop to keep the window open
 	//	until the user decides to close the window and quit the program.  Without a loop, the
@@ -805,7 +802,6 @@ int main( int argc, char *argv[] ) {
 		glfwSwapBuffers(window);// flush the OpenGL commands and make sure they get rendered!
 		glfwPollEvents();				// check for any events and signal to redraw screen
 
-		animate();
 
 		updateScene();
 	}
