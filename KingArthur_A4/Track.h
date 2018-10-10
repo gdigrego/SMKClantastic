@@ -90,6 +90,7 @@ void resetColor() {
 //Draw surface
 void drawTraceSurface(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, int resolution) {
 	for (int i = 0; i < resolution; i++) {
+		rainbowUpdateColor();
 		glm::vec3 point = evaluateBezierCurve(p0, p1, p2, p3, 1.0f * i / resolution);
 		glm::vec3 point2 = evaluateBezierCurve(p0, p1, p2, p3, 1.0f * (i + 1) / resolution);
 		glm::vec3 align = point2 - point;
