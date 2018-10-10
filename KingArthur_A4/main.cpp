@@ -32,6 +32,7 @@
 #include <stdio.h>			// for printf functionality
 #include <stdlib.h>			// for exit functionality
 #include <time.h>			  // for time() functionality
+#include <SOIL/SOIL.h>
 #include "RacetrackInput.h"
 
 #include "Kepler.h"
@@ -88,6 +89,14 @@ vector<glm::vec3> objects;     // object locations
 char* objectType;               // object type - FIXME, there can be multiple object types!
 int numObjects;                // object count
 
+GLuint grassTexHandle, skyTexHandle;
+
+char* fileName;
+int textureWidth, textureHeight;
+int skyWidth, skyHeight;
+unsigned char* imageData;
+unsigned char* skyData;
+
 
 //*************************************************************************************
 //
@@ -104,8 +113,58 @@ void setupLights() {
     glLightfv( GL_LIGHT0, GL_DIFFUSE, diffuseCol );
     float specularCol[4] = { 1.0, 1.0, 1.0, 1.0 };          // white specular light
     glLightfv( GL_LIGHT0, GL_SPECULAR, specularCol );
-    float ambientCol[4] = { 0.2, 0.2, 0.2, 1.0 };           // soft gray ambient light
+    float ambientCol[4] = { 0.8, 0.8, 0.8, 0.5 };           // soft gray ambient light
     glLightfv( GL_LIGHT0, GL_AMBIENT, ambientCol );
+	// harsh ambient for skybox!
+	glLightfv ( GL_LIGHT1, GL_AMBIENT, diffuseCol );
+}
+
+bool registerOpenGLTexture(unsigned char *textureData,
+                           unsigned int texWidth, unsigned int texHeight,
+                           GLuint &textureHandle) {
+
+    if( textureData == 0 ) {
+        fprintf(stderr,"Cannot register texture; no data specified.");
+        return false;
+    }
+
+
+    glEnable( GL_TEXTURE_2D );
+    glGenTextures( grassTexHandle, &textureHandle );
+    glBindTexture( GL_TEXTURE_2D, grassTexHandle );
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, textureWidth, textureHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureData);
+    return true;
+}
+void setupTextures() {
+
+    grassTexHandle = 
+        SOIL_load_OGL_texture (
+            "textures/grass.png",
+            SOIL_LOAD_AUTO,
+            SOIL_CREATE_NEW_ID,
+            SOIL_FLAG_MIPMAPS
+                | SOIL_FLAG_INVERT_Y
+                | SOIL_FLAG_COMPRESS_TO_DXT
+        );
+	skyTexHandle = 
+        SOIL_load_OGL_texture (
+            "textures/sky.jpg",
+            SOIL_LOAD_AUTO,
+            SOIL_CREATE_NEW_ID,
+            SOIL_FLAG_MIPMAPS
+                | SOIL_FLAG_INVERT_Y
+                | SOIL_FLAG_COMPRESS_TO_DXT
+        );
+    // TODO #6: Register non-PPM
+    
+    registerOpenGLTexture( imageData, textureWidth, textureHeight, grassTexHandle );
+	registerOpenGLTexture( skyData, skyWidth, skyHeight, skyTexHandle );
+
 }
 
 // loadControlPoints() /////////////////////////////////////////////////////////
@@ -227,7 +286,9 @@ glm::vec3 evaluateBezierSurface(vector<glm::vec3> points, float u, float v) {
 //
 ////////////////////////////////////////////////////////////////////////////////
 void renderBezierSurface(vector<glm::vec3> points, int resolution) {
-	glColor3f(.6, .6, .6);
+	//glColor3f(.6, .6, .6);
+	glEnable( GL_TEXTURE_2D );
+    glBindTexture( GL_TEXTURE_2D, grassTexHandle );
 	for (int i = 0; i < resolution; i++) {
 		for (int j = 0; j < resolution; j++) {
 			glBegin(GL_TRIANGLE_STRIP);
@@ -236,19 +297,23 @@ void renderBezierSurface(vector<glm::vec3> points, int resolution) {
 			glm::vec3 point3 = evaluateBezierSurface(points, 1.0f * i / resolution, 1.0f * (j + 1) / resolution);
 			glm::vec3 point4 = evaluateBezierSurface(points, 1.0f * (i + 1) / resolution, 1.0f * (j + 1) / resolution);
 
-			float expectedHeight = 40;
+			float expectedHeight = 5;
 			glColor3f((170 - (point1.y / expectedHeight) * 120) / 256.0, (150 + (point1.y / expectedHeight) * 20) / 256.0, (100 - (point1.y / expectedHeight) * 50) / 256.0);
 			glVertex3f(point1.x, point1.y, point1.z);
-			glColor3f((170 - (point2.y / expectedHeight) * 120) / 256.0, (150 + (point2.y / expectedHeight) * 20) / 256.0, (100 - (point2.y / expectedHeight) * 50) / 256.0);
+			glTexCoord2f( 0.0f,  1.0f );
+			//glColor3f((170 - (point2.y / expectedHeight) * 120) / 256.0, (150 + (point2.y / expectedHeight) * 20) / 256.0, (100 - (point2.y / expectedHeight) * 50) / 256.0);
 			glVertex3f(point2.x, point2.y, point2.z);
-			glColor3f((170 - (point3.y / expectedHeight) * 120) / 256.0, (150 + (point3.y / expectedHeight) * 20) / 256.0, (100 - (point3.y / expectedHeight) * 50) / 256.0);
+			glTexCoord2f( 1.0f,  1.0f );
+			//glColor3f((170 - (point3.y / expectedHeight) * 120) / 256.0, (150 + (point3.y / expectedHeight) * 20) / 256.0, (100 - (point3.y / expectedHeight) * 50) / 256.0);
 			glVertex3f(point3.x, point3.y, point3.z);
-			glColor3f((170 - (point4.y / expectedHeight) * 120) / 256.0, (150 + (point4.y / expectedHeight) * 20) / 256.0, (100 - (point4.y / expectedHeight) * 50) / 256.0);
+			glTexCoord2f( 1.0f,  0.0f );
+			//glColor3f((170 - (point4.y / expectedHeight) * 120) / 256.0, (150 + (point4.y / expectedHeight) * 20) / 256.0, (100 - (point4.y / expectedHeight) * 50) / 256.0);
 			glVertex3f(point4.x, point4.y, point4.z);
-
+			glTexCoord2f( 0.0f,  0.0f );
 			glEnd();
 		}
 	}
+	glDisable( GL_TEXTURE_2D );
 }
 
 
@@ -548,7 +613,17 @@ void generateEnvironmentDL() {
 	for (unsigned int i = 0; i < track.size() - 1; i += 3) {
 		drawTraceSurface(track.at(i), track.at(i + 1), track.at(i + 2), track.at(i + 3), 100);
 	}
-	
+	// add skybox and do corrective lighting
+	glDisable( GL_LIGHT0 );
+	glEnable ( GL_LIGHT1 );
+	glEnable( GL_TEXTURE_2D );
+    glBindTexture( GL_TEXTURE_2D, skyTexHandle );
+	//glColor3f(0.0f,0.5f,1.0f);
+	glColor3f(1.0,1.0,1.0);
+	CSCI441::drawSolidSphere(500,25,25);
+	glDisable( GL_LIGHT1 );
+	glEnable ( GL_LIGHT0 );
+	glDisable( GL_TEXTURE_2D );
 	// FIXME -- add objects and shit here too
 	glEndList();
 }
@@ -629,7 +704,7 @@ void setupOpenGL() {
 	// feel free to play around with this, but we won't talk about
 	// lighting in OpenGL for another couple of weeks yet.
 	float lightCol[4] = { 1, 1, 1, 1};
-	float ambientCol[4] = { 0.1, 0.1, 0.1, 1.0 };
+	float ambientCol[4] = { 0.1, 0.4, 0.1, 1.0 };
 	float lPosition[4] = { 10, 10, 10, 1 };
 	glLightfv( GL_LIGHT0, GL_POSITION,lPosition );
 	glLightfv( GL_LIGHT0, GL_DIFFUSE,lightCol );
@@ -734,6 +809,8 @@ int main( int argc, char *argv[] ) {
 	// initialize all of the GLFW specific information releated to OpenGL and our window
 	GLFWwindow *window = setupGLFW();	// initialize all of the GLFW specific information releated to OpenGL and our window
 	setupOpenGL();					// initialize all of the OpenGL specific information
+	setupTextures();                  // load our textures into memory and register with OpenGL
+	setupLights();
 	setupScene();					// initialize objects in our scene
 
 	// GLFW sets up our OpenGL context so must be done first
