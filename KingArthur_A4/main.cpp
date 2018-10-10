@@ -36,6 +36,7 @@
 
 #include "Kepler.h"
 #include "Hero.h"
+#include "Track.h"
 
 using namespace std;
 //*************************************************************************************
@@ -185,19 +186,6 @@ void renderBezierSegment( glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d, gl
 	glEnd();
 }
 
-// evaluateBezierCurve() ////////////////////////////////////////////////////////
-//
-// Computes a location along a Bezier Curve.
-//
-////////////////////////////////////////////////////////////////////////////////
-glm::vec3 evaluateBezierCurve(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, float t) {
-	glm::vec3 point(0, 0, 0);
-
-	point = p0 * (1 - t) * (1 - t) * (1 - t) + 3.0f * p1 * t * (1 - t) * (1 - t) + 3.0f * p2 * t * t * (1 - t) + p3 * t * t * t;
-
-	return point;
-}
-
 // renderBezierCurve() //////////////////////////////////////////////////////////
 //
 // Responsible for drawing a Bezier Curve as defined by four control points.
@@ -248,17 +236,15 @@ void renderBezierSurface(vector<glm::vec3> points, int resolution) {
 			glm::vec3 point3 = evaluateBezierSurface(points, 1.0f * i / resolution, 1.0f * (j + 1) / resolution);
 			glm::vec3 point4 = evaluateBezierSurface(points, 1.0f * (i + 1) / resolution, 1.0f * (j + 1) / resolution);
 
+			float expectedHeight = 5.0;
+			glColor3f((170 - (point1.y / expectedHeight) * 120) / 256.0, (150 + (point1.y / expectedHeight) * 20) / 256.0, (100 - (point1.y / expectedHeight) * 50) / 256.0);
 			glVertex3f(point1.x, point1.y, point1.z);
+			glColor3f((170 - (point2.y / expectedHeight) * 120) / 256.0, (150 + (point2.y / expectedHeight) * 20) / 256.0, (100 - (point2.y / expectedHeight) * 50) / 256.0);
 			glVertex3f(point2.x, point2.y, point2.z);
+			glColor3f((170 - (point3.y / expectedHeight) * 120) / 256.0, (150 + (point3.y / expectedHeight) * 20) / 256.0, (100 - (point3.y / expectedHeight) * 50) / 256.0);
 			glVertex3f(point3.x, point3.y, point3.z);
+			glColor3f((170 - (point4.y / expectedHeight) * 120) / 256.0, (150 + (point4.y / expectedHeight) * 20) / 256.0, (100 - (point4.y / expectedHeight) * 50) / 256.0);
 			glVertex3f(point4.x, point4.y, point4.z);
-
-//			glm::vec3 t1 = point2 - point1;
-//			glm::vec3 t2 = point3 - point1;
-//
-//			glm::vec3 norm = glm::cross(t2, t1);
-//			glm::normalize(norm);
-//			glNormal3f(norm.x, norm.y, norm.z);
 
 			glEnd();
 		}
@@ -436,8 +422,11 @@ static void cursor_callback( GLFWwindow *window, double x, double y ) {
 	}
 	else if( leftMouseButton == GLFW_PRESS ) {
 		cameraTheta += (x - mousePos.x)*(0.005);
-		cameraPhi -= (mousePos.y - y)*(0.005);
-		if (cameraPhi > PHI_MAX) cameraPhi = PHI_MAX;
+		cameraPhi += (mousePos.y - y)*(0.005);
+		if (cameraPhi <= 0)
+			cameraPhi = 0 + 0.001;
+		if (cameraPhi >= M_PI)
+			cameraPhi = M_PI - 0.001;
 		recomputeOrientation();     // update camera direction based on (theta,phi)
 	}
 	mousePos.x = x;
@@ -695,7 +684,7 @@ void setupScene() {
 	vehicleTheta = 1;
 	cameraTheta = -M_PI / 3.0f;
 	cameraPhi = 2.37753;
-	camPos = glm::vec3(100, 250, 100);
+	camPos = glm::vec3(50, 50, 50);
 	camDir = camPos - glm::vec3(0, 0, 0);
 	wheelPhi = 0;
 	step_size = 0.01;

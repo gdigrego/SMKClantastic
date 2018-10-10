@@ -36,6 +36,19 @@ int rainbowBlue = 0;
  * The functions here can not do this or each curve will restart the color set.
  */
 
+ // evaluateBezierCurve() ////////////////////////////////////////////////////////
+ //
+ // Computes a location along a Bezier Curve.
+ //
+ ////////////////////////////////////////////////////////////////////////////////
+glm::vec3 evaluateBezierCurve(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, float t) {
+	glm::vec3 point(0, 0, 0);
+
+	point = p0 * (1 - t) * (1 - t) * (1 - t) + 3.0f * p1 * t * (1 - t) * (1 - t) + 3.0f * p2 * t * t * (1 - t) + p3 * t * t * t;
+
+	return point;
+}
+
 // Calculates tangent of a given point
 glm::vec3 evaluateBezierTangent(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, float t) {
 	glm::vec3 point(0, 0, 0);
@@ -67,7 +80,7 @@ void rainbowUpdateColor() {
 }
 
 //Reset color
-//CALL ONCE PER FRAME
+//CALL ONCE PER FRAME if not statically defined
 void resetColor() {
 	rainbowRed = rainbowMax;
 	rainbowBlue = 0;
