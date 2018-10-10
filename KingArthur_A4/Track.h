@@ -105,7 +105,7 @@ void drawTraceSurface(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, in
 		glm::mat4 rotMtx = glm::rotate(glm::mat4(), theta, rotationVector);
 		glMultMatrixf(&rotMtx[0][0]);
 
-		glm::mat4 scaleMtx = glm::scale(glm::mat4(), glm::vec3(10, 1, 1));
+		glm::mat4 scaleMtx = glm::scale(glm::mat4(), glm::vec3(10, 1.5, 1.5));
 		glMultMatrixf(&scaleMtx[0][0]);
 
 		CSCI441::drawSolidCube(1);

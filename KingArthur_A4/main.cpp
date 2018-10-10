@@ -629,7 +629,7 @@ void setupOpenGL() {
 	// feel free to play around with this, but we won't talk about
 	// lighting in OpenGL for another couple of weeks yet.
 	float lightCol[4] = { 1, 1, 1, 1};
-	float ambientCol[4] = { 0.0, 0.0, 0.0, 1.0 };
+	float ambientCol[4] = { 0.1, 0.1, 0.1, 1.0 };
 	float lPosition[4] = { 10, 10, 10, 1 };
 	glLightfv( GL_LIGHT0, GL_POSITION,lPosition );
 	glLightfv( GL_LIGHT0, GL_DIFFUSE,lightCol );
