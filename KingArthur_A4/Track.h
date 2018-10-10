@@ -95,7 +95,7 @@ void drawTraceSurface(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, in
 		glm::vec3 point2 = evaluateBezierCurve(p0, p1, p2, p3, 1.0f * (i + 1) / resolution);
 		glm::vec3 align = point2 - point;
 		glm::vec3 tangent = evaluateBezierTangent(p0, p1, p2, p3, 1.0f * i / resolution);
-		tangent = glm::normalize(tangent) + point;
+		tangent = glm::normalize(tangent + point);
 		glm::vec3 rotationVector = glm::cross(tangent, align);
 		float theta = acos(glm::dot(align, tangent) / (align.length()));
 
@@ -105,7 +105,7 @@ void drawTraceSurface(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, in
 		glm::mat4 rotMtx = glm::rotate(glm::mat4(), theta, rotationVector);
 		glMultMatrixf(&rotMtx[0][0]);
 
-		glm::mat4 scaleMtx = glm::scale(glm::mat4(), glm::vec3(1, .1, .1));
+		glm::mat4 scaleMtx = glm::scale(glm::mat4(), glm::vec3(10, 1, 1));
 		glMultMatrixf(&scaleMtx[0][0]);
 
 		CSCI441::drawSolidCube(1);

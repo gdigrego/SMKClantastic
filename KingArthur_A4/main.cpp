@@ -236,7 +236,7 @@ void renderBezierSurface(vector<glm::vec3> points, int resolution) {
 			glm::vec3 point3 = evaluateBezierSurface(points, 1.0f * i / resolution, 1.0f * (j + 1) / resolution);
 			glm::vec3 point4 = evaluateBezierSurface(points, 1.0f * (i + 1) / resolution, 1.0f * (j + 1) / resolution);
 
-			float expectedHeight = 100;
+			float expectedHeight = 40;
 			glColor3f((170 - (point1.y / expectedHeight) * 120) / 256.0, (150 + (point1.y / expectedHeight) * 20) / 256.0, (100 - (point1.y / expectedHeight) * 50) / 256.0);
 			glVertex3f(point1.x, point1.y, point1.z);
 			glColor3f((170 - (point2.y / expectedHeight) * 120) / 256.0, (150 + (point2.y / expectedHeight) * 20) / 256.0, (100 - (point2.y / expectedHeight) * 50) / 256.0);
@@ -548,7 +548,7 @@ void generateEnvironmentDL() {
 	for (unsigned int i = 0; i < track.size() - 1; i += 3) {
 		drawTraceSurface(track.at(i), track.at(i + 1), track.at(i + 2), track.at(i + 3), 100);
 	}
-
+	
 	// FIXME -- add objects and shit here too
 	glEndList();
 }
