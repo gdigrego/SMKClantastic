@@ -18,8 +18,11 @@
 #endif
 
 #include <GLFW/glfw3.h>	// include GLFW framework header
+#include <SOIL/SOIL.h>
 
 #include <CSCI441/objects.hpp> // for our 3D objects
+#include <CSCI441/OpenGLUtils.hpp>		// for OpenGL helpers
+#include <CSCI441/TextureUtils.hpp>		// for Texture helpers
 
 // include GLM libraries and matrix functions
 #include <glm/glm.hpp>
@@ -101,6 +104,16 @@ int skyWidth, skyHeight;
 unsigned char* imageData;
 unsigned char* skyData;
 
+DarkSlayer ds;
+int hero1TPos = 0;
+int hero1ActiveCurve = 0;
+float hero1RotAngle;
+glm::vec3 hero1PrevAlign(0, 0, 1);
+glm::vec3 hero1RotAxis;
+glm::vec3 hero1Position;
+glm::vec3 hero1Normal;
+glm::vec3 hero1NextPoint;
+
 
 //*************************************************************************************
 //
@@ -139,8 +152,8 @@ bool registerOpenGLTexture(unsigned char *textureData,
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
     glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, textureWidth, textureHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureData);
     return true;
 }
@@ -692,8 +705,45 @@ void renderScene(void)  {
 
 	glMultMatrixf( &( glm::inverse( scaleMtx ) )[0][0] );
 
+<<<<<<< HEAD
 	glMultMatrixf( &( glm::inverse( ollie.position ) )[0][0] );
 }
+=======
+	glMultMatrixf( &( glm::inverse( transMtx1 ) )[0][0] );
+
+	/*
+	transMtx1 = glm::translate(glm::mat4(), hero1Position);
+	glMultMatrixf(&transMtx1[0][0]);
+
+	glm::mat4 transMtx2 = glm::translate(glm::mat4(), hero1Normal * 1.5f);
+	glMultMatrixf(&transMtx2[0][0]);
+
+	glm::mat4 rotMtx = glm::rotate(glm::mat4(), -hero1RotAngle, hero1RotAxis);
+	glMultMatrixf(&rotMtx[0][0]);
+	
+	ds.draw(true);
+
+	glMultMatrixf(&(glm::inverse(rotMtx))[0][0]);
+	glMultMatrixf(&(glm::inverse(transMtx2))[0][0]);
+	glMultMatrixf(&(glm::inverse(transMtx1))[0][0]);
+	*/
+
+	glm::mat4 lookMtx = glm::inverse(glm::lookAt(hero1Position, hero1NextPoint, hero1Normal));
+	glMultMatrixf(&lookMtx[0][0]);
+
+	glm::mat4 transMtx2 = glm::translate(glm::mat4(), hero1Normal * 2.2f);
+	glMultMatrixf(&transMtx2[0][0]);
+
+	glm::mat4 rotMtx = glm::rotate(glm::mat4(), glm::radians(180.0f), hero1Normal);
+	glMultMatrixf(&rotMtx[0][0]);
+
+	ds.draw(true);
+
+	glMultMatrixf(&(glm::inverse(rotMtx))[0][0]);
+	glMultMatrixf(&(glm::inverse(transMtx2))[0][0]);
+	glMultMatrixf(&(glm::inverse(lookMtx))[0][0]);
+} 
+>>>>>>> 38a6a5147fedc9868bb56116d9ae405ed6982dc2
 
 //*************************************************************************************
 //
@@ -931,9 +981,37 @@ int main( int argc, char *argv[] ) {
 
 		renderScene();					// draw everything to the window
 
+		hero1ActiveCurve = hero1TPos / curveResolution;
+		hero1Position = evaluateBezierCurve(track.at(hero1ActiveCurve * 3), track.at(hero1ActiveCurve * 3 + 1),
+			track.at(hero1ActiveCurve * 3 + 2), track.at(hero1ActiveCurve * 3 + 3),
+			1.0f * (hero1TPos % curveResolution) / curveResolution);
+
+		hero1TPos += 1;	//Change to configure speed
+		if (hero1TPos >= curveResolution * (track.size() - 1) / 3)		//If hero has gone through whole curve
+			hero1TPos = 0;
+
+		int hero1NextCurve = hero1TPos / curveResolution;
+		hero1NextPoint = evaluateBezierCurve(track.at(hero1NextCurve * 3), track.at(hero1NextCurve * 3 + 1),
+			track.at(hero1NextCurve * 3 + 2), track.at(hero1NextCurve * 3 + 3),
+			1.0f * (hero1TPos % curveResolution) / curveResolution);
+
+		glm::vec3 align = hero1NextPoint - hero1Position;
+		hero1RotAxis = glm::normalize(glm::cross(hero1PrevAlign, align));
+		hero1RotAngle = acos(glm::dot(hero1PrevAlign, align));
+		hero1PrevAlign = align;
+
+		glm::vec3 tangent = evaluateBezierTangent(track.at(hero1NextCurve * 3), track.at(hero1NextCurve * 3 + 1),
+			track.at(hero1NextCurve * 3 + 2), track.at(hero1NextCurve * 3 + 3), 
+			1.0f * (hero1TPos % curveResolution) / curveResolution);
+		tangent = glm::normalize(tangent + hero1Position);
+		glm::vec3 rotationVector = glm::cross(tangent, align);
+		glm::vec4 rotVec(rotationVector.x, rotationVector.y, rotationVector.z, 0);
+		glm::mat4 rotMtx1 = glm::rotate(glm::mat4(), glm::radians(-90.0f), rotationVector);
+		glm::vec4 normal = rotVec * rotMtx1;
+		hero1Normal = glm::normalize(glm::vec3(normal));
+
 		glfwSwapBuffers(window);// flush the OpenGL commands and make sure they get rendered!
 		glfwPollEvents();				// check for any events and signal to redraw screen
-
 
 		updateScene();
 	}
