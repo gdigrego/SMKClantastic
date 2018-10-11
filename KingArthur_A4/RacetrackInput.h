@@ -111,7 +111,7 @@ bool loadRaceTrack(char *filename,
          */
         for (int i = 0; i < numObjects; i++){
             cout << "OBJECTION YOUR HONOR" << endl;
-            int x, y, z;
+            float x, y, z;
             string line;
             getline(fin, line);
             stringstream t(line);
@@ -149,18 +149,16 @@ bool loadRaceTrack(char *filename,
             glm::mat4 orientation = glm::translate(glm::mat4(), 
                 glm::vec3(x,y,z));
             // get scale
+            string temp_string;
             getline(fin, line);
             cout << line << endl;
             stringstream st(line);
             getline(st, temp, ',');
-            stringstream ssx(temp);
-            ssx >> x;
+            x = stof(temp);
             getline(st, temp, ',');
-            stringstream ssy(temp);
-            ssy >> y;
+            y = stof(temp);
             getline(st, temp);
-            stringstream ssz(temp);
-            ssz >> z;
+            z = stof(temp);
             glm::mat4 scale = glm::scale(glm::mat4(), 
                 glm::vec3(x,y,z));
             cout << "YEET " << objectType << endl;
