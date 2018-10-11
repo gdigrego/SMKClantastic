@@ -12,6 +12,7 @@
  */
 
 // HEADERS /////////////////////////////////////////////////////////////////////
+#pragma once
 
 // include the OpenGL library header
 #ifdef __APPLE__				// if compiling on Mac OS
