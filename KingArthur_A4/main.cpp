@@ -57,9 +57,16 @@ int leftMouseButton;    	 						// status of the mouse button
 glm::vec2 mousePos;			              		  	// last known X and Y of the mouse
 glm::vec3 vehiclePos, vehicleDir;                   // vehicle position and direction
 float arcballDistance;
+// arcball camera variables
 glm::vec3 camPos;            						// camera position in cartesian coordinates
 float cameraTheta, cameraPhi;               		// camera DIRECTION in spherical coordinates
 glm::vec3 camDir; 			                    	// camera DIRECTION in cartesian coordinates
+
+// ollie camera variables
+glm::vec3 ollieCamPos;
+float ollieCamTheta, ollieCamPhi;
+glm::vec3 ollieCamDir;
+
 float vehicleTheta;
 float wheelPhi;
 float step_size;
@@ -76,6 +83,9 @@ glm::vec3 camAngles;
 Ollie ollie;
 float t = 0;
 int curveNumber = 0;
+glm::vec3 olliePos = glm::vec3(5, 5, 5);
+glm::vec3 ollieDir;
+float ollieTheta;
 
 // THIS IS GOING TO BE UGLY! (but we're in it together)
 int CtrlState;
@@ -141,7 +151,7 @@ bool registerOpenGLTexture(unsigned char *textureData,
                            GLuint &textureHandle) {
 
     if( textureData == 0 ) {
-        fprintf(stderr,"Cannot register texture; no data specified.");
+        fprintf(stderr,"Cannot register texture; no data specified.\n");
         return false;
     }
 
@@ -356,13 +366,31 @@ void recomputeOrientation() {
 	//camPos = arcballDistance*camDir + vehiclePos;
 }
 
+void recomputeOllieCamOrientation() {
+	ollieCamDir = glm::vec3(
+		sin(ollieCamTheta)*sin(ollieCamPhi),
+		-cos(ollieCamPhi),
+		-cos(ollieCamTheta)*sin(ollieCamPhi)
+	);
+
+	glm::normalize(ollieCamDir);
+}
+
 void recomputeVehicleDirection() {
 	vehicleDir = glm::vec3(-sin(vehicleTheta), 0, cos(vehicleTheta));
 	glm::normalize(vehicleDir);
 }
 
+void recomputeOllieOrientation() {
+	// TODO #5: Convert spherical coordinates into a cartesian vector
+	// see Wednesday's slides for equations.  Extra Hint: Slide #70
+	ollieDir.x =  cosf(ollieTheta);
+    ollieDir.z = sinf(ollieTheta);
 
+    // and NORMALIZE this directional vector!!!
+    ollieDir = glm::normalize( ollieDir );
 
+}
 
 
 //*************************************************************************************
@@ -395,13 +423,17 @@ static void keyboard_callback( GLFWwindow *window, int key, int scancode, int ac
 	}
 
 	float step = 5.0f;
+	float ollieStep = .5f;
 
 	switch(key) {
+
 		case GLFW_KEY_W: {
 			Wstate = action;
 
 			if(cameraType == 1) {
-				vehiclePos.x += 1;
+				olliePos.x += ollieDir.x*ollieStep;
+				olliePos.y += ollieDir.y*ollieStep;
+				olliePos.z += ollieDir.z*ollieStep;
 			} else if(cameraType == 2) {
 				camPos.x += camDir.x*step;
 				camPos.y += camDir.y*step;
@@ -414,7 +446,8 @@ static void keyboard_callback( GLFWwindow *window, int key, int scancode, int ac
 			Astate = action;
 
 			if(cameraType == 1) {
-				vehiclePos.z -= 1;
+				ollieTheta -= .05;
+				recomputeOllieOrientation();
 			} else if(cameraType == 2) {
 				camPos.z -= 1;
 			}
@@ -425,7 +458,9 @@ static void keyboard_callback( GLFWwindow *window, int key, int scancode, int ac
 			Sstate = action;
 
 			if(cameraType == 1) {
-				vehiclePos.x -= 1;
+				olliePos.x -= ollieDir.x*ollieStep;
+				olliePos.y -= ollieDir.y*ollieStep;
+				olliePos.z -= ollieDir.z*ollieStep;
 			} else if(cameraType == 2) {
 				camPos.x -= camDir.x*step;
 				camPos.y -= camDir.y*step;
@@ -438,7 +473,8 @@ static void keyboard_callback( GLFWwindow *window, int key, int scancode, int ac
 			Dstate = action;
 
 			if(cameraType == 1) {
-				vehiclePos.z += 1;
+				ollieTheta += .05;
+				recomputeOllieOrientation();
 			} else if(cameraType == 2) {
 				camPos.z += 1;
 			}
@@ -499,17 +535,29 @@ static void keyboard_callback( GLFWwindow *window, int key, int scancode, int ac
 //
 ////////////////////////////////////////////////////////////////////////////////
 static void cursor_callback( GLFWwindow *window, double x, double y ) {
-	if (leftMouseButton == GLFW_PRESS && keyisdown(CtrlState)) {
-		arcballDistance += (y - mousePos.y)*(0.005);
-	}
-	else if( leftMouseButton == GLFW_PRESS ) {
-		cameraTheta += (x - mousePos.x)*(0.005);
-		cameraPhi += (mousePos.y - y)*(0.005);
-		if (cameraPhi <= 0)
-			cameraPhi = 0 + 0.001;
-		if (cameraPhi >= M_PI)
-			cameraPhi = M_PI - 0.001;
-		recomputeOrientation();     // update camera direction based on (theta,phi)
+	if(cameraType == 2) {
+		if (leftMouseButton == GLFW_PRESS && keyisdown(CtrlState)) {
+			arcballDistance += (y - mousePos.y)*(0.005);
+		}
+		else if( leftMouseButton == GLFW_PRESS ) {
+			cameraTheta += (x - mousePos.x)*(0.005);
+			cameraPhi += (mousePos.y - y)*(0.005);
+			if (cameraPhi <= 0)
+				cameraPhi = 0 + 0.001;
+			if (cameraPhi >= M_PI)
+				cameraPhi = M_PI - 0.001;
+			recomputeOrientation();     // update camera direction based on (theta,phi)
+		}
+	} else if(cameraType == 1) {
+		if( leftMouseButton == GLFW_PRESS ) {
+			ollieCamTheta += (x - mousePos.x)*(0.005);
+			ollieCamPhi += (mousePos.y - y)*(0.005);
+			if (ollieCamPhi <= 0)
+				ollieCamPhi = 0 + 0.001;
+			if (ollieCamPhi >= M_PI)
+				ollieCamPhi = M_PI - 0.001;
+			recomputeOllieCamOrientation();     // update camera direction based on (theta,phi)
+		}
 	}
 	mousePos.x = x;
 	mousePos.y = y;
@@ -713,6 +761,22 @@ void renderScene(void)  {
 	glMultMatrixf(&(glm::inverse(rotMtx))[0][0]);
 	glMultMatrixf(&(glm::inverse(transMtx2))[0][0]);
 	glMultMatrixf(&(glm::inverse(lookMtx))[0][0]);
+
+	// allways apply gravity to Ollie
+	// or always be sitting on surface????
+	glm::mat4 transMtxOllie = glm::translate(glm::mat4(), olliePos);
+	glMultMatrixf(&transMtxOllie[0][0]);
+
+	glm::mat4 scaleMtxOllie = glm::scale(glm::mat4(), glm::vec3(.0625, .0625, .0625));
+	glMultMatrixf(&scaleMtxOllie[0][0]);
+
+	glm::mat4 rotMtxOllie = glm::rotate(glm::mat4(), -ollieTheta-glm::radians(270.0f), glm::vec3(0, 1.0f, 0));
+	glMultMatrixf( &rotMtxOllie[0][0]);
+
+	ollie.draw(true);
+
+	glMultMatrixf(&(glm::inverse(scaleMtxOllie))[0][0]);
+	glMultMatrixf(&(glm::inverse(transMtxOllie))[0][0]);
 }
 
 //*************************************************************************************
@@ -845,6 +909,11 @@ void setupScene() {
 	vehicleTheta = 1;
 	cameraTheta = -M_PI / 3.0f;
 	cameraPhi = 2.37753;
+	ollieCamTheta = -M_PI / 3.0f;
+	ollieCamPhi = 2.37753;
+	recomputeOllieCamOrientation();
+	ollieTheta = 0;
+	recomputeOllieOrientation();
 	camPos = glm::vec3(50, 50, 50);
 	camDir = camPos - glm::vec3(0, 0, 0);
 	wheelPhi = 0;
@@ -902,6 +971,7 @@ int main( int argc, char *argv[] ) {
 	//	until the user decides to close the window and quit the program.  Without a loop, the
 	//	window will display once and then the program exits.
 	while( !glfwWindowShouldClose(window) ) {	// check if the window was instructed to be closed
+
 		glDrawBuffer( GL_BACK );				// work with our back frame buffer
 		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );	// clear the current color contents and depth buffer in the window
 
@@ -929,8 +999,8 @@ int main( int argc, char *argv[] ) {
 		// set up our look at matrix to position our camera
 		// TODO #6: Change how our lookAt matrix gets constructed
 		if(cameraType == 1) {
-			glm::mat4 viewMtx = glm::lookAt( camDir*arcballDistance + vehiclePos, // camera is located at camPos
-											 vehiclePos,		// camera is looking a point directly ahead
+			glm::mat4 viewMtx = glm::lookAt( ollieCamDir*arcballDistance + olliePos, // camera is located at camPos
+											 olliePos,		// camera is looking a point directly ahead
 											 glm::vec3(  0,  1,  0 ) );		// up vector is (0, 1, 0) - positive Y
 
 			// multiply by the look at matrix - this is the same as our view martix
@@ -938,7 +1008,7 @@ int main( int argc, char *argv[] ) {
 		} else if(cameraType == 2) {
 			// set up our look at matrix to position our camera
 			glm::mat4 viewMtx = glm::lookAt( camPos,
-											 camPos + camDir,
+											 camDir + camPos,
 											 glm::vec3(  0,  1,  0 ) );
 
 			// multiply by the look at matrix - this is the same as our view martix
@@ -984,6 +1054,7 @@ int main( int argc, char *argv[] ) {
 		glfwPollEvents();				// check for any events and signal to redraw screen
 
 		updateScene();
+
 	}
 
 	glfwDestroyWindow( window );// clean up and close our window

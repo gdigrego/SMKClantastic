@@ -32,7 +32,7 @@ int rainbowBlue = 0;
 float rainbowAlphaValue = 0.2;
 void drawControlPoints(vector<glm::vec3> controlPoints, int resolution);
 void drawBezierCurve(vector<glm::vec3> controlPoints, int resolution);
-bool testing = true;
+bool testing = false;
 
 /*NOTE:
  * Before or after each FRAME, set rainbowRed to max and rainbowGreen/rainbowBlue to 0.

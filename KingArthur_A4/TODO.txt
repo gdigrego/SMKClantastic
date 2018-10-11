@@ -2,8 +2,6 @@ TODO List for SMK Project
 
 1. Wandering hero bound by surface
 2. Second hero on curve moving in equal arc length intervals (i think)
-3. Second object put into scene --DONE
 4. All heros must be animated while moving
 5. arcball, freecam, and first person
 6. viewport for first person camera
-7.
