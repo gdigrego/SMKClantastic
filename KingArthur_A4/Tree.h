@@ -42,6 +42,10 @@ using namespace std;
 float trunk[3] = {0.5f,0.5f,0.0f};
 float leave[3] = {0.0f,0.8f,0.1f};
 
+float getRandy() { return rand() / (float)RAND_MAX; }
+
+int coin(){if (getRandy() <= 0.5) {return 0;} else {return 1;}} 
+
 class PineTree : public Drawable{
     public:
         // draw stuff
@@ -60,6 +64,12 @@ void PineTree::draw() {
         glm::vec3(0.0f, 10.0f, 0.0f));
     glMultMatrixf( &branchLocation[0][0] ); {
         glColor3f( leave[0], leave[1], leave[2] );
-        CSCI441::drawSolidCone(20,20,20,10);
+        if (coin()){
+            CSCI441::drawSolidCone(20,20,20,10);
+        }
+        else{
+            CSCI441::drawSolidSphere(20,20,20);
+        }
+        
     } glMultMatrixf( &(glm::inverse( branchLocation )[0][0]));
 }
