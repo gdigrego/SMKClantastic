@@ -682,35 +682,6 @@ void generateEnvironmentDL() {
 void renderScene(void)  {
 	glCallList(environmentDL);
 
-	t += .1 / float (curveResolution);
-
-    if(t >= 1) {
-        curveNumber++;
-        t = 0;
-    }
-
-    if(curveNumber >= trackPoints.size()/3) {
-        curveNumber = 0;
-    }
-
-	// use this for ollie to follow track curve
-	glm::vec3 olliePosVec = evaluateBezierCurve((*trackPoints)[curveNumber], (*trackPoints)curveNumber+1], (*trackPoints)[curveNumber+2], (*trackPoints)[curveNumber+3], t);
-	ollie.position = glm::translate(glm::mat4(), olliePosVec);
-	glMultMatrixf( &(ollie.position)[0][0] );
-
-	glm::mat4 scaleMtx = glm::scale( glm::mat4(), glm::vec3(.0625, .0625, .0625) );
-	glMultMatrixf( &scaleMtx[0][0] );
-
-	ollie.draw(true);
-
-	glMultMatrixf( &( glm::inverse( scaleMtx ) )[0][0] );
-
-<<<<<<< HEAD
-	glMultMatrixf( &( glm::inverse( ollie.position ) )[0][0] );
-}
-=======
-	glMultMatrixf( &( glm::inverse( transMtx1 ) )[0][0] );
-
 	/*
 	transMtx1 = glm::translate(glm::mat4(), hero1Position);
 	glMultMatrixf(&transMtx1[0][0]);
@@ -720,7 +691,7 @@ void renderScene(void)  {
 
 	glm::mat4 rotMtx = glm::rotate(glm::mat4(), -hero1RotAngle, hero1RotAxis);
 	glMultMatrixf(&rotMtx[0][0]);
-	
+
 	ds.draw(true);
 
 	glMultMatrixf(&(glm::inverse(rotMtx))[0][0]);
@@ -742,8 +713,7 @@ void renderScene(void)  {
 	glMultMatrixf(&(glm::inverse(rotMtx))[0][0]);
 	glMultMatrixf(&(glm::inverse(transMtx2))[0][0]);
 	glMultMatrixf(&(glm::inverse(lookMtx))[0][0]);
-} 
->>>>>>> 38a6a5147fedc9868bb56116d9ae405ed6982dc2
+}
 
 //*************************************************************************************
 //
@@ -1001,7 +971,7 @@ int main( int argc, char *argv[] ) {
 		hero1PrevAlign = align;
 
 		glm::vec3 tangent = evaluateBezierTangent(track.at(hero1NextCurve * 3), track.at(hero1NextCurve * 3 + 1),
-			track.at(hero1NextCurve * 3 + 2), track.at(hero1NextCurve * 3 + 3), 
+			track.at(hero1NextCurve * 3 + 2), track.at(hero1NextCurve * 3 + 3),
 			1.0f * (hero1TPos % curveResolution) / curveResolution);
 		tangent = glm::normalize(tangent + hero1Position);
 		glm::vec3 rotationVector = glm::cross(tangent, align);

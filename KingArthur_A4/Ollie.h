@@ -36,7 +36,6 @@
 #include <fstream>			// for file I/O
 #include <vector>				// for vector
 #include <iostream>
-#include "Drawable.h"
 
 using namespace std;
 const int HEAD_RADIUS = 10;

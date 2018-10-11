@@ -91,7 +91,7 @@ void resetColor() {
 
 //Draw surface
 void drawTraceSurface(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, int resolution) {
-	glEnable (GL_BLEND); 
+	glEnable (GL_BLEND);
 	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	if( testing ) {
 		vector<glm::vec3> set;
@@ -129,9 +129,6 @@ void drawTraceSurface(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, in
 
 		glMultMatrixf(&(glm::inverse(transMtx))[0][0]);
 	}
-<<<<<<< HEAD
-}
-=======
 	glDisable( GL_BLEND );
 }
 
@@ -165,7 +162,7 @@ void renderBezierCurve2( glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3,
 	float t = 0.0;
 	float timing = 1.0 / resolution;
 	glColor3f(0.0f,0.0f,1.0f);
-	
+
 	glBegin(GL_LINE_STRIP);{
 		for (t = 0.0; t < 1.0; t += timing){
 			glm::vec3 point = evaluateBezierCurve(p0,p1,p2,p3,t);
@@ -175,13 +172,12 @@ void renderBezierCurve2( glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3,
 	//glLineWidth(30.0f);
 }
 void drawBezierCurve(vector<glm::vec3> controlPoints, int resolution){
-	
+
 	//glLineWidth(3.0f);
 	for (int i = 0; i < (controlPoints).size() - 1; i+=3) {
-		renderBezierCurve2((controlPoints)[i], 
-						(controlPoints)[i+1], 
-						(controlPoints)[i+2], 
+		renderBezierCurve2((controlPoints)[i],
+						(controlPoints)[i+1],
+						(controlPoints)[i+2],
 						(controlPoints)[i+3], resolution);
 	}
 }
->>>>>>> 38a6a5147fedc9868bb56116d9ae405ed6982dc2
