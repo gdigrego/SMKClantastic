@@ -85,9 +85,7 @@ int curveCount;               // number of bezier surfaces
 vector<glm::vec3> surface;     // all surface points
 int trackPoints;               // number of track control points
 vector<glm::vec3> track;       // track points
-vector<glm::vec3> objects;     // object locations
-char* objectType;               // object type - FIXME, there can be multiple object types!
-int numObjects;                // object count
+vector<Drawable> objects;     // object that are drawable
 
 GLuint grassTexHandle, skyTexHandle;
 
@@ -795,7 +793,7 @@ int main( int argc, char *argv[] ) {
 		return -1;
 	}
 
-	if (!loadRaceTrack(argv[1], &curveCount, &surface, &trackPoints, &track, &objects, objectType, &numObjects)) {
+	if (!loadRaceTrack(argv[1], &curveCount, &surface, &trackPoints, &track, &objects)) {
 		fprintf(stdout, "Error: invalid data file\n");
 		return -1;
 	}

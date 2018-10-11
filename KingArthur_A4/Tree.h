@@ -36,18 +36,19 @@
 #include <fstream>			// for file I/O
 #include <vector>				// for vector
 #include <iostream>
+#include "Drawable.h"
 using namespace std;
 
 float trunk[3] = {0.5f,0.5f,0.0f};
 float leave[3] = {0.0f,0.8f,0.1f};
 
-class Tree {
+class PineTree : public Drawable{
     public:
         // draw stuff
         void draw();
 };
 
-void Tree::draw() {
+void PineTree::draw() {
     glColor3f( trunk[0], trunk[1], trunk[2] );
     CSCI441::drawSolidCylinder(10,10,10,10,10);
     glm::mat4 branchLocation = glm::translate(glm::mat4(),
@@ -55,5 +56,5 @@ void Tree::draw() {
     glMultMatrixf( &branchLocation[0][0] ); {
         glColor3f( leave[0], leave[1], leave[2] );
         CSCI441::drawSolidCone(20,20,20,10);
-    }
+    } glMultMatrixf( &(glm::inverse( branchLocation )[0][0]));
 }
