@@ -124,6 +124,10 @@ glm::vec3 hero1Position;
 glm::vec3 hero1Normal;
 glm::vec3 hero1NextPoint;
 
+// step sizes for movement of cam or ollie
+float step = 5.0f;
+float ollieStep = .5f;
+
 
 //*************************************************************************************
 //
@@ -422,63 +426,22 @@ static void keyboard_callback( GLFWwindow *window, int key, int scancode, int ac
 		}
 	}
 
-	float step = 5.0f;
-	float ollieStep = .5f;
-
 	switch(key) {
 
 		case GLFW_KEY_W: {
 			Wstate = action;
-
-			if(cameraType == 1) {
-				olliePos.x += ollieDir.x*ollieStep;
-				olliePos.y += ollieDir.y*ollieStep;
-				olliePos.z += ollieDir.z*ollieStep;
-			} else if(cameraType == 2) {
-				camPos.x += camDir.x*step;
-				camPos.y += camDir.y*step;
-				camPos.z += camDir.z*step;
-			}
-
 			break;
 		}
 		case GLFW_KEY_A: {
 			Astate = action;
-
-			if(cameraType == 1) {
-				ollieTheta -= .05;
-				recomputeOllieOrientation();
-			} else if(cameraType == 2) {
-				camPos.z -= 1;
-			}
-
 			break;
 		}
 		case GLFW_KEY_S: {
 			Sstate = action;
-
-			if(cameraType == 1) {
-				olliePos.x -= ollieDir.x*ollieStep;
-				olliePos.y -= ollieDir.y*ollieStep;
-				olliePos.z -= ollieDir.z*ollieStep;
-			} else if(cameraType == 2) {
-				camPos.x -= camDir.x*step;
-				camPos.y -= camDir.y*step;
-				camPos.z -= camDir.z*step;
-			}
-
 			break;
 		}
 		case GLFW_KEY_D: {
 			Dstate = action;
-
-			if(cameraType == 1) {
-				ollieTheta += .05;
-				recomputeOllieOrientation();
-			} else if(cameraType == 2) {
-				camPos.z += 1;
-			}
-
 			break;
 		}
 		case GLFW_KEY_Z: {
@@ -877,22 +840,46 @@ void setupOpenGL() {
 //
 void updateScene() {
 	if (keyisdown(Wstate)) {
-		vehiclePos += vehicleDir*step_size;
-		wheelPhi += step_size;
+		if(cameraType == 1) {
+			olliePos.x += ollieDir.x*ollieStep;
+			olliePos.y += ollieDir.y*ollieStep;
+			olliePos.z += ollieDir.z*ollieStep;
+		} else if(cameraType == 2) {
+			camPos.x += camDir.x*step;
+			camPos.y += camDir.y*step;
+			camPos.z += camDir.z*step;
+		}
 	}
 	if (keyisdown(Sstate)) {
-		vehiclePos -= vehicleDir*step_size;
-		wheelPhi -= step_size;
+		if(cameraType == 1) {
+			olliePos.x -= ollieDir.x*ollieStep;
+			olliePos.y -= ollieDir.y*ollieStep;
+			olliePos.z -= ollieDir.z*ollieStep;
+		} else if(cameraType == 2) {
+			camPos.x -= camDir.x*step;
+			camPos.y -= camDir.y*step;
+			camPos.z -= camDir.z*step;
+		}
 	}
 	if(vehiclePos.x > MAX_XZ) vehiclePos.x = MAX_XZ;
 	if(vehiclePos.x < MIN_XZ) vehiclePos.x = MIN_XZ;
 	if(vehiclePos.z > MAX_XZ) vehiclePos.z = MAX_XZ;
 	if(vehiclePos.z < MIN_XZ) vehiclePos.z = MIN_XZ;
 	if (keyisdown(Astate)) {
-		vehicleTheta -= step_size;
+		if(cameraType == 1) {
+			ollieTheta -= .05;
+			recomputeOllieOrientation();
+		} else if(cameraType == 2) {
+			camPos.z -= 1;
+		}
 	}
 	if (keyisdown(Dstate)) {
-		vehicleTheta += step_size;
+		if(cameraType == 1) {
+			ollieTheta += .05;
+			recomputeOllieOrientation();
+		} else if(cameraType == 2) {
+			camPos.z += 1;
+		}
 	}
 
 	recomputeVehicleDirection();
