@@ -32,7 +32,7 @@
 #include <stdio.h>			// for printf functionality
 #include <stdlib.h>			// for exit functionality
 #include <time.h>			  // for time() functionality
-#include <SOIL.h>
+#include <SOIL/SOIL.h>
 #include "RacetrackInput.h"
 
 #include "Kepler.h"
