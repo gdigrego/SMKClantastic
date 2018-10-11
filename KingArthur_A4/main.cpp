@@ -632,7 +632,8 @@ void generateEnvironmentDL() {
 		glMultMatrixf( &(*object).position[0][0] ); {
 			glMultMatrixf( &(*object).orientation[0][0] ); {
 				glMultMatrixf( &(*object).scale[0][0] ); {
-					//(*object).draw();
+					PineTree* temp = static_cast<PineTree*>(object);
+					(*temp).draw();
 				} glMultMatrixf( &(glm::inverse( (*object).scale ))[0][0] );
 			} glMultMatrixf( &(glm::inverse( (*object).orientation ))[0][0] );
 		} glMultMatrixf( &(glm::inverse( (*object).position ))[0][0] );
