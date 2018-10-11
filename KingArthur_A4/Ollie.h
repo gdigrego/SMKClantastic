@@ -36,6 +36,8 @@
 #include <fstream>			// for file I/O
 #include <vector>				// for vector
 #include <iostream>
+#include "Drawable.h"
+
 using namespace std;
 const int HEAD_RADIUS = 10;
 const int LEG_WIDTH = 10;
@@ -55,14 +57,15 @@ double headColor[3] = {0.7,0.7,0.7};
 void drawHead();
 void drawBody();
 void drawLeg(glm::mat4 position);
-class Ollie{
+class Ollie:public Drawable{
     private:
-        int hit_points;
-        int stamina;
+        // float t = 0;
+        // int curveNumber = 0;
     public:
         // draw stuff
         void draw();
         void draw(bool movement);
+        // void ollieUpdatePosition(vector<glm::vec3> &trackPoints, int curveResolution);
 };
 // Draw Hero on screen, with or without movement
 void Ollie::draw(){
@@ -97,11 +100,11 @@ void Ollie::draw(bool movement){
         headPosition -= headSpeed;
     }
 
-    glm::mat4 rLegLocation = glm::translate(glm::mat4(), 
+    glm::mat4 rLegLocation = glm::translate(glm::mat4(),
         glm::vec3(-10.0f,20.0f - float(legPosition),0.0f));
-    glm::mat4 lLegLocation = glm::translate(glm::mat4(), 
+    glm::mat4 lLegLocation = glm::translate(glm::mat4(),
         glm::vec3(10.0f,float(legPosition)+10.0f,0.0f));
-    
+
     // draw body and scale
     drawBody();
     // draw head
@@ -111,7 +114,7 @@ void Ollie::draw(bool movement){
     drawLeg(lLegLocation);
 }
 void drawHead(){
-    glm::mat4 headLocation = glm::translate(glm::mat4(), 
+    glm::mat4 headLocation = glm::translate(glm::mat4(),
         glm::vec3(0.0f,50.0f+headPosition,0.0f));
     glMultMatrixf( &headLocation[0][0] );{
         glColor3f(headColor[0],headColor[1],headColor[2]);
@@ -128,12 +131,12 @@ void drawBody(){
             CSCI441::drawSolidCube(GLdouble(BODY_WIDTH));
         }glMultMatrixf(&(glm::inverse(bodyScale)[0][0]));
     } glMultMatrixf( &(glm::inverse( bodyLocation ))[0][0]);
-}   
+}
 
 void drawLeg(glm::mat4 position){
     glm::mat4 shoeOffset = glm::translate(glm::mat4(),
         glm::vec3(0.0f, -35.0f, 2.0f));
-    
+
     // make legs taller and feer longer
     glm::mat4 legScale = glm::scale(glm::mat4(), glm::vec3(0.5f, 2.0f, 1.0f));
     glm::mat4 footScale = glm::scale(glm::mat4(), glm::vec3(0.8f, 0.25f, 1.5f));
@@ -153,3 +156,31 @@ void drawLeg(glm::mat4 position){
         } glMultMatrixf( &(glm::inverse(footScale))[0][0]);
     } glMultMatrixf( &(glm::inverse( position ))[0][0]);
 }
+
+// void ollieUpdatePosition(vector<glm::vec3> &trackPoints, int curveResolution) {
+//
+//     t += .1 / float (curveResolution);
+//
+//     if(t >= 1) {
+//         curveNumber++;
+//         t = 0;
+//     }
+//
+//     if(curveNumber >= trackPoints.size()/3) {
+//         curveNumber = 0;
+//     }
+//
+// 	// use this for ollie to follow track curve
+// 	glm::vec3 olliePosVec = evaluateBezierCurve((*trackPoints)[curveNumber], (*trackPoints)curveNumber+1], (*trackPoints)[curveNumber+2], (*trackPoints)[curveNumber+3], t);
+// 	this->position = glm::translate(glm::mat4(), olliePosVec);
+// 	glMultMatrixf( &(this->position)[0][0] );
+//
+// 	glm::mat4 scaleMtx = glm::scale( glm::mat4(), glm::vec3(.0625, .0625, .0625) );
+// 	glMultMatrixf( &scaleMtx[0][0] );
+//
+// 	draw(true);
+//
+// 	glMultMatrixf( &( glm::inverse( scaleMtx ) )[0][0] );
+//
+// 	glMultMatrixf( &( glm::inverse( this->position ) )[0][0] );
+// }

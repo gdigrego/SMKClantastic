@@ -71,6 +71,8 @@ glm::vec3 camAngles;
 
 // models
 Ollie ollie;
+float t = 0;
+int curveNumber = 0;
 
 // THIS IS GOING TO BE UGLY! (but we're in it together)
 int CtrlState;
@@ -667,18 +669,30 @@ void generateEnvironmentDL() {
 void renderScene(void)  {
 	glCallList(environmentDL);
 
+	t += .1 / float (curveResolution);
+
+    if(t >= 1) {
+        curveNumber++;
+        t = 0;
+    }
+
+    if(curveNumber >= trackPoints.size()/3) {
+        curveNumber = 0;
+    }
+
 	// use this for ollie to follow track curve
-	glm::mat4 transMtx1 = glm::translate(glm::mat4(), glm::vec3(5, 0, 5));
-	glMultMatrixf( &transMtx1[0][0] );
+	glm::vec3 olliePosVec = evaluateBezierCurve((*trackPoints)[curveNumber], (*trackPoints)curveNumber+1], (*trackPoints)[curveNumber+2], (*trackPoints)[curveNumber+3], t);
+	ollie.position = glm::translate(glm::mat4(), olliePosVec);
+	glMultMatrixf( &(ollie.position)[0][0] );
 
 	glm::mat4 scaleMtx = glm::scale( glm::mat4(), glm::vec3(.0625, .0625, .0625) );
 	glMultMatrixf( &scaleMtx[0][0] );
 
-	ollie.draw();
+	ollie.draw(true);
 
 	glMultMatrixf( &( glm::inverse( scaleMtx ) )[0][0] );
 
-	glMultMatrixf( &( glm::inverse( transMtx1 ) )[0][0] );
+	glMultMatrixf( &( glm::inverse( ollie.position ) )[0][0] );
 }
 
 //*************************************************************************************
@@ -798,7 +812,11 @@ void updateScene() {
 	}
 
 	recomputeVehicleDirection();
+
+	// Move Ollie along track curve every time updateScene is called
+
 }
+
 void setupScene() {
 	// give the camera a scenic starting point.
 	arcballDistance = 20;
