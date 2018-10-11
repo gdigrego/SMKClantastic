@@ -38,6 +38,7 @@
 #include "Kepler.h"
 #include "Hero.h"
 #include "Track.h"
+#include "Ollie.h"
 
 using namespace std;
 //*************************************************************************************
@@ -67,6 +68,9 @@ int curveResolution;
 int cameraType = 2;
 bool keysDown[256] = {0};
 glm::vec3 camAngles;
+
+// models
+Ollie ollie;
 
 // THIS IS GOING TO BE UGLY! (but we're in it together)
 int CtrlState;
@@ -140,7 +144,7 @@ bool registerOpenGLTexture(unsigned char *textureData,
 }
 void setupTextures() {
 
-    grassTexHandle = 
+    grassTexHandle =
         SOIL_load_OGL_texture (
             "textures/grass.png",
             SOIL_LOAD_AUTO,
@@ -149,7 +153,7 @@ void setupTextures() {
                 | SOIL_FLAG_INVERT_Y
                 | SOIL_FLAG_COMPRESS_TO_DXT
         );
-	skyTexHandle = 
+	skyTexHandle =
         SOIL_load_OGL_texture (
             "textures/sky.jpg",
             SOIL_LOAD_AUTO,
@@ -159,7 +163,7 @@ void setupTextures() {
                 | SOIL_FLAG_COMPRESS_TO_DXT
         );
     // TODO #6: Register non-PPM
-    
+
     registerOpenGLTexture( imageData, textureWidth, textureHeight, grassTexHandle );
 	registerOpenGLTexture( skyData, skyWidth, skyHeight, skyTexHandle );
 
@@ -607,7 +611,7 @@ void generateEnvironmentDL() {
 		// render the surface and repeat
 		renderBezierSurface(controlPoints, curveResolution);
 	}
-	
+
 	for (unsigned int i = 0; i < track.size() - 1; i += 3) {
 		drawTraceSurface(track.at(i), track.at(i + 1), track.at(i + 2), track.at(i + 3), 100);
 	}
@@ -642,7 +646,7 @@ void generateEnvironmentDL() {
                     //glMultMatrixf( &scale[0][0] );{
                         //CSCI441::drawSolidTeapot(10);
                         //someTree.draw();
-                        
+
                     //} glMultMatrixf( &(glm::inverse( scale ))[0][0] );
                 //} glMultMatrixf( &(glm::inverse( orientation ))[0][0] );
             //} glMultMatrixf( &(glm::inverse( position ))[0][0] );
@@ -662,6 +666,19 @@ void generateEnvironmentDL() {
 //
 void renderScene(void)  {
 	glCallList(environmentDL);
+
+	// use this for ollie to follow track curve
+	glm::mat4 transMtx1 = glm::translate(glm::mat4(), glm::vec3(5, 0, 5));
+	glMultMatrixf( &transMtx1[0][0] );
+
+	glm::mat4 scaleMtx = glm::scale( glm::mat4(), glm::vec3(.0625, .0625, .0625) );
+	glMultMatrixf( &scaleMtx[0][0] );
+
+	ollie.draw();
+
+	glMultMatrixf( &( glm::inverse( scaleMtx ) )[0][0] );
+
+	glMultMatrixf( &( glm::inverse( transMtx1 ) )[0][0] );
 }
 
 //*************************************************************************************
