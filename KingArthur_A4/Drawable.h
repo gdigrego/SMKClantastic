@@ -11,6 +11,6 @@
 
 class Drawable {
     public:
-    glm::vec3 position, orientation, scale;
+    glm::mat4 position, orientation, scale;
     void draw();
 };

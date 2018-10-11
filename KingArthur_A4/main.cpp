@@ -85,7 +85,7 @@ int curveCount;               // number of bezier surfaces
 vector<glm::vec3> surface;     // all surface points
 int trackPoints;               // number of track control points
 vector<glm::vec3> track;       // track points
-vector<Drawable> objects;     // object that are drawable
+vector<Drawable*> objects;     // object that are drawable
 
 GLuint grassTexHandle, skyTexHandle;
 
@@ -623,6 +623,34 @@ void generateEnvironmentDL() {
 	glEnable ( GL_LIGHT0 );
 	glDisable( GL_TEXTURE_2D );
 	// FIXME -- add objects and shit here too
+	for ( Drawable* object : objects ){
+		glPushMatrix();
+		glMultMatrixf( &(*object).position[0][0] ); {
+			glMultMatrixf( &(*object).orientation[0][0] ); {
+				glMultMatrixf( &(*object).scale[0][0] ); {
+					//(*object).draw();
+				} glMultMatrixf( &(glm::inverse( (*object).scale ))[0][0] );
+			} glMultMatrixf( &(glm::inverse( (*object).orientation ))[0][0] );
+		} glMultMatrixf( &(glm::inverse( (*object).position ))[0][0] );
+	}
+	// perform rotations and matrix ops
+            //glPushMatrix();
+            //glMatrixMode(GL_MODELVIEW);
+            //glMultMatrixf( &position[0][0] );{
+                //glMultMatrixf( &orientation[0][0] );{
+                    //glMultMatrixf( &scale[0][0] );{
+                        //CSCI441::drawSolidTeapot(10);
+                        //someTree.draw();
+                        
+                    //} glMultMatrixf( &(glm::inverse( scale ))[0][0] );
+                //} glMultMatrixf( &(glm::inverse( orientation ))[0][0] );
+            //} glMultMatrixf( &(glm::inverse( position ))[0][0] );
+            //glPopMatrix();
+
+
+
+
+
 	glEndList();
 }
 

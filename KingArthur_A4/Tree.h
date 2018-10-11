@@ -46,6 +46,11 @@ class PineTree : public Drawable{
     public:
         // draw stuff
         void draw();
+    PineTree(glm::mat4 p, glm::mat4 o, glm::mat4 s){
+        position = p;
+        orientation = o;
+        scale = s;
+    }
 };
 
 void PineTree::draw() {

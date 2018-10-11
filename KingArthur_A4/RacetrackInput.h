@@ -29,7 +29,7 @@ bool loadRaceTrack(char *filename,
                    vector<glm::vec3> *surface, // all surface points
                    int *trackPoints,           // number of track control points
                    vector<glm::vec3> *track,   // track points
-                   vector<Drawable> *objects) // objects
+                   vector<Drawable*> *objects) // objects
 {
     ifstream fin(filename);
     if (fin.fail())
@@ -164,29 +164,16 @@ bool loadRaceTrack(char *filename,
             glm::mat4 scale = glm::scale(glm::mat4(), 
                 glm::vec3(x,y,z));
             cout << "YEET " << objectType << endl;
-            // perform rotations and matrix ops
-            //glPushMatrix();
-            //glMatrixMode(GL_MODELVIEW);
-            //glMultMatrixf( &position[0][0] );{
-                //glMultMatrixf( &orientation[0][0] );{
-                    //glMultMatrixf( &scale[0][0] );{
-                        //CSCI441::drawSolidTeapot(10);
-                        //someTree.draw();
-                        /*switch (objectType){
-                            case 't':
-                                // its a damn tree
-                                cout << "MOTHAFUCKIN HAPPY TREEEEEEESSSSSS" << endl;
-                                // but there are only trees
-                                PineTree::draw();
-                                break;
-                            default:
-                                PineTree::draw();
-                                break;
-                        } */
-                    //} glMultMatrixf( &(glm::inverse( scale ))[0][0] );
-                //} glMultMatrixf( &(glm::inverse( orientation ))[0][0] );
-            //} glMultMatrixf( &(glm::inverse( position ))[0][0] );
-            //glPopMatrix();
+            switch (objectType){
+                case 't':
+                    // its a damn tree
+                    cout << "MOTHAFUCKIN HAPPY TREEEEEEESSSSSS" << endl;
+                    // but there are only trees
+                    PineTree* temp = new PineTree(position, orientation, scale);
+                    (*objects).push_back(temp);
+                    break;
+            }
+            
             cout << "fin" << endl;
         }
 
