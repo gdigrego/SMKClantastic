@@ -1,0 +1,8 @@
+TODO List for SMK Project
+
+1. Second hero on curve moving in equal arc length intervals (i think)
+2. Second object put into scene
+3. All heros must be animated while moving
+4. arcball, freecam, and first person
+5. viewport for first person camera
+6. 
