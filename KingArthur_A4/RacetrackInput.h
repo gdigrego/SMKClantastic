@@ -110,7 +110,7 @@ bool loadRaceTrack(char *filename,
          * <object size>
          */
         for (int i = 0; i < numObjects; i++){
-            cout << "OBJECTION YOUR HONOR" << endl;
+            //cout << "OBJECTION YOUR HONOR" << endl;
             float x, y, z;
             string line;
             getline(fin, line);
@@ -120,7 +120,7 @@ bool loadRaceTrack(char *filename,
             t.get(objectType);
             // get position
             getline(fin, line);
-            cout << line << endl;
+            //cout << line << endl;
             stringstream tp(line);
             getline(tp, temp, ',');
             stringstream psx(temp);
@@ -135,7 +135,7 @@ bool loadRaceTrack(char *filename,
                 glm::vec3(x,y,z));
             // get orientation
             getline(fin, line);
-            cout << line << endl;
+            //cout << line << endl;
             stringstream to(line);
             getline(to, temp, ',');
             stringstream osx(temp);
@@ -151,7 +151,7 @@ bool loadRaceTrack(char *filename,
             // get scale
             string temp_string;
             getline(fin, line);
-            cout << line << endl;
+            //cout << line << endl;
             stringstream st(line);
             getline(st, temp, ',');
             x = stof(temp);
@@ -161,25 +161,25 @@ bool loadRaceTrack(char *filename,
             z = stof(temp);
             glm::mat4 scale = glm::scale(glm::mat4(), 
                 glm::vec3(x,y,z));
-            cout << "YEET " << objectType << endl;
+            //cout << "YEET " << objectType << endl;
             switch (objectType){
                 case 't':
                     // its a damn tree
-                    cout << "MOTHAFUCKIN HAPPY TREEEEEEESSSSSS" << endl;
+                    //cout << "MOTHAFUCKIN HAPPY TREEEEEEESSSSSS" << endl;
                     // but there are only trees
                     PineTree* temp = new PineTree(position, orientation, scale);
                     (*objects).push_back(temp);
                     break;
             }
             
-            cout << "fin" << endl;
+            //cout << "fin" << endl;
         }
 
         // FIXME later when we actually have objects and shitttttt
     }
     catch (const std::exception &exc)
     {
-        std::cerr << "GOT SOME FUCKING ERROR AGAIN: " << exc.what() << std::endl;
+        std::cerr << "GOT SOME ERROR AGAIN: " << exc.what() << std::endl;
     }
     return true;
 }

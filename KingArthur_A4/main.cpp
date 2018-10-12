@@ -63,6 +63,7 @@ float arcballDistance;
 glm::vec3 camPos;            						// camera position in cartesian coordinates
 float cameraTheta, cameraPhi;               		// camera DIRECTION in spherical coordinates
 glm::vec3 camDir; 			                    	// camera DIRECTION in cartesian coordinates
+bool fpsCam = false;
 
 // ollie camera variablesc
 
@@ -446,7 +447,13 @@ static void keyboard_callback( GLFWwindow *window, int key, int scancode, int ac
 			case GLFW_KEY_ESCAPE:
 			case GLFW_KEY_Q:
 				exit(EXIT_SUCCESS);
+			// Key for first person cam
+			case GLFW_KEY_3: {
+				fpsCam = !fpsCam;
+				break;
+			}
 		}
+		
 	}
 
 	switch(key) {
@@ -524,11 +531,6 @@ static void keyboard_callback( GLFWwindow *window, int key, int scancode, int ac
 		// Key for freecam
 		case GLFW_KEY_2: {
 			cameraType = 2;
-			break;
-		}
-		// Key for first person cam
-		case GLFW_KEY_3: {
-			cameraType = 3;
 			break;
 		}
 
@@ -1055,14 +1057,13 @@ void setupScene() {
 	ollieTheta = 0;
 	recomputeOllieOrientation();
 	camPos = glm::vec3(50, 50, 50);
-	camDir = camPos - glm::vec3(0, 0, 0);
+	camDir = glm::normalize(glm::vec3(-1, -1, -1));
 	wheelPhi = 0;
 	step_size = 0.01;
 	curveResolution = 100;
 	hideBezierCurve = false;
 	hideCage = false;
 	recomputeVehicleDirection();
-	recomputeOrientation();
 
 	srand( time(NULL) );	// seed our random number generator
 	generateEnvironmentDL();
@@ -1137,94 +1138,121 @@ int main( int argc, char *argv[] ) {
 		glLoadIdentity();							// set the matrix to be the identity
 
 		// set up our look at matrix to position our camera
-		// TODO #6: Change how our lookAt matrix gets constructed
+		glm::mat4 viewMtx;
 		if(cameraType == 1) {
 			switch (heroChoice) {
 				// arcball camera for Ollie
 				case 4: {
-					glm::mat4 viewMtx = glm::lookAt( ollieCamDir*arcballDistance + olliePos, // camera is located at camPos
+					viewMtx = glm::lookAt( ollieCamDir*arcballDistance + olliePos, // camera is located at camPos
 													 olliePos,		// camera is looking a point directly ahead
 													 glm::vec3(  0,  1,  0 ) );		// up vector is (0, 1, 0) - positive Y
 					// multiply by the look at matrix - this is the same as our view martix
-					glMultMatrixf( &viewMtx[0][0] );
+					//glMultMatrixf( &viewMtx[0][0] );
 					break;
 				}
 
 				// arcball camera for DarkSlayer
 				case 5: {
-					glm::mat4 viewMtx = glm::lookAt( ollieCamDir*arcballDistance + hero1Position,
+					viewMtx = glm::lookAt( ollieCamDir*arcballDistance + hero1Position,
 													 hero1Position,
 													 glm::vec3( 0, 1, 0 ) );
 					// multiply by the look at matrix - this is the same as our view martix
-					glMultMatrixf( &viewMtx[0][0] );
+					//glMultMatrixf( &viewMtx[0][0] );
 					break;
 				}
 
 				// arcball camera for King Arthur
 				case 6: {
-					glm::mat4 viewMtx = glm::lookAt( ollieCamDir*arcballDistance + hero2Position,
+					viewMtx = glm::lookAt( ollieCamDir*arcballDistance + hero2Position,
 													 hero2Position,
 													 glm::vec3( 0, 1, 0 ) );
 					// multiply by the look at matrix - this is the same as our view martix
-					glMultMatrixf( &viewMtx[0][0] );
+					//glMultMatrixf( &viewMtx[0][0] );
 					break;
 				}
 			}
 
 		} else if(cameraType == 2) {
 			// set up our look at matrix to position our camera
-			glm::mat4 viewMtx = glm::lookAt( camPos,
+			viewMtx = glm::lookAt( camPos,
 											 camDir + camPos,
 											 glm::vec3(  0,  1,  0 ) );
 
 			// multiply by the look at matrix - this is the same as our view martix
-			glMultMatrixf( &viewMtx[0][0] );
-		} else if(cameraType == 3) {
-			switch (heroChoice) {
-				// First person camera for Ollie
-				case 4: {
-					glm::mat4 viewMtx = glm::lookAt( olliePos + glm::vec3(0, 4.5, 1), // camera is located at camPos
-													 olliePos + glm::vec3(0, 4.5, 1) + ollieDir,		// camera is looking a point directly ahead
-													 glm::vec3(  0,  1,  0 ) );		// up vector is (0, 1, 0) - positive Y
-
-					// multiply by the look at matrix - this is the same as our view martix
-					glMultMatrixf( &viewMtx[0][0] );
-					break;
-				}
-
-				// First person camera for DarkSlayer
-				case 5: {
-					glm::vec3 hero1DirectionVec = hero1NextPoint - hero1Position;
-
-					glm::mat4 viewMtx = glm::lookAt( hero1Position + glm::vec3(0, 5, 0), // camera is located at camPos
-													 hero1Position + glm::vec3(0, 5, 0) + hero1DirectionVec,		// camera is looking a point directly ahead
-													 hero1Normal );		// up vector is (0, 1, 0) - positive Y
-
-					// multiply by the look at matrix - this is the same as our view martix
-					glMultMatrixf( &viewMtx[0][0] );
-					break;
-				}
-
-				// First person camera for King Arthur
-				case 6: {
-					glm::vec3 hero2DirectionVec = hero2NextPoint - hero2Position;
-
-					glm::mat4 viewMtx = glm::lookAt( hero2Position + glm::vec3(0, 8, 0), // camera is located at camPos
-													 hero2Position + glm::vec3(0, 8, 0) + hero2DirectionVec,		// camera is looking a point directly ahead
-													 hero2Normal );		// up vector is (0, 1, 0) - positive Y
-
-					// multiply by the look at matrix - this is the same as our view martix
-					glMultMatrixf( &viewMtx[0][0] );
-					break;
-				}
-			}
+			//glMultMatrixf( &viewMtx[0][0] );
 		}
 
 		// create position for light0 and set light0 to this position in scene
 		float lightPosition[4] = { 15.0, 15.0, 15.0, 1.0 };
         glLightfv( GL_LIGHT0, GL_POSITION, lightPosition );
 
+		glMultMatrixf(&viewMtx[0][0]);
+
 		renderScene();					// draw everything to the window
+
+		glLoadIdentity();
+
+		//Draw first person view in corner
+		if (fpsCam) {
+			//Create the viewport
+			glViewport(2.0 * framebufferWidth / 3,				//Viewport takes up 1/9 of the screen
+				2.0 * framebufferHeight / 3,
+				1.0 * framebufferWidth / 3,				//Viewport in upper right corner
+				1.0 * framebufferHeight / 3);
+
+			//Clear out viewport background
+			glScissor(2.0 * framebufferWidth / 3,
+				2.0 * framebufferHeight / 3,
+				1.0 * framebufferWidth / 3,
+				1.0 * framebufferHeight / 3);
+			glEnable(GL_SCISSOR_TEST);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+			//Set camera based on current target
+			switch (heroChoice) {
+				// First person camera for Ollie
+			case 4: {
+				viewMtx = glm::lookAt(olliePos + glm::vec3(0, 4.5, 1), // camera is located at camPos
+					olliePos + glm::vec3(0, 4.5, 1) + ollieDir,		// camera is looking a point directly ahead
+					ollieNormal);		// up vector is (0, 1, 0) - positive Y
+
+										// multiply by the look at matrix - this is the same as our view martix
+				break;
+			}
+
+					// First person camera for DarkSlayer
+			case 5: {
+				glm::vec3 hero1DirectionVec = hero1NextPoint - hero1Position;
+
+				viewMtx = glm::lookAt(hero1Position + glm::vec3(0, 5, 0), // camera is located at camPos
+					hero1Position + glm::vec3(0, 5, 0) + hero1DirectionVec,		// camera is looking a point directly ahead
+					hero1Normal);		// up vector is (0, 1, 0) - positive Y
+
+										// multiply by the look at matrix - this is the same as our view martix
+				break;
+			}
+
+					// First person camera for King Arthur
+			case 6: {
+				glm::vec3 hero2DirectionVec = hero2NextPoint - hero2Position;
+
+				viewMtx = glm::lookAt(hero2Position + glm::vec3(0, 8, 0), // camera is located at camPos
+					hero2Position + glm::vec3(0, 8, 0) + hero2DirectionVec,		// camera is looking a point directly ahead
+					hero2Normal);		// up vector is (0, 1, 0) - positive Y
+
+										// multiply by the look at matrix - this is the same as our view martix
+
+				break;
+			}
+			}
+			glMultMatrixf(&viewMtx[0][0]);
+
+			renderScene();					//Draw to the viewport
+
+			glMultMatrixf(&(glm::inverse(viewMtx))[0][0]);
+
+			glDisable(GL_SCISSOR_TEST);
+		}
 
 		//Update hero1
 		hero1ActiveCurve = hero1TPos / curveResolution;

@@ -432,7 +432,7 @@ public:
 
 	void draw(bool mvmt) {
 		draw();
-		if (mvmt) wheelAngle += (2.0 / 3) * .25;
+		if (mvmt) wheelAngle += .05;
 	}
 
 	DarkSlayer() {
