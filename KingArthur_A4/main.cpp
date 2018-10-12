@@ -95,6 +95,7 @@ int Sstate;
 int Dstate;
 bool hideCage;
 bool hideBezierCurve;
+int upState, leftState, rightState, downState;
 
 glm::mat4 identity = glm::mat4(1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1);
 
@@ -125,7 +126,7 @@ glm::vec3 hero1Normal;
 glm::vec3 hero1NextPoint;
 
 // step sizes for movement of cam or ollie
-float step = 5.0f;
+float step = 1.0f;
 float ollieStep = .5f;
 
 
@@ -427,6 +428,23 @@ static void keyboard_callback( GLFWwindow *window, int key, int scancode, int ac
 	}
 
 	switch(key) {
+
+		case GLFW_KEY_UP:{
+			upState = action;
+			break;
+		}
+		case GLFW_KEY_LEFT: {
+			leftState = action;
+			break;
+		}
+		case GLFW_KEY_DOWN: {
+			downState = action;
+			break;
+		}
+		case GLFW_KEY_RIGHT: {
+			rightState = action;
+			break;
+		}
 
 		case GLFW_KEY_W: {
 			Wstate = action;
@@ -839,23 +857,38 @@ void setupOpenGL() {
 //	initial starting point and generate the display list for our city
 //
 void updateScene() {
+
+	if(keyisdown(upState)) {
+		olliePos.x += ollieDir.x*ollieStep;
+		olliePos.y += ollieDir.y*ollieStep;
+		olliePos.z += ollieDir.z*ollieStep;
+	}
+
+	if(keyisdown(leftState)) {
+		ollieTheta -= .05;
+		recomputeOllieOrientation();
+	}
+
+	if(keyisdown(downState)) {
+		olliePos.x -= ollieDir.x*ollieStep;
+		olliePos.y -= ollieDir.y*ollieStep;
+		olliePos.z -= ollieDir.z*ollieStep;
+	}
+
+	if(keyisdown(rightState)) {
+		ollieTheta += .05;
+		recomputeOllieOrientation();
+	}
+
 	if (keyisdown(Wstate)) {
-		if(cameraType == 1) {
-			olliePos.x += ollieDir.x*ollieStep;
-			olliePos.y += ollieDir.y*ollieStep;
-			olliePos.z += ollieDir.z*ollieStep;
-		} else if(cameraType == 2) {
+		if(cameraType == 2) {
 			camPos.x += camDir.x*step;
 			camPos.y += camDir.y*step;
 			camPos.z += camDir.z*step;
 		}
 	}
 	if (keyisdown(Sstate)) {
-		if(cameraType == 1) {
-			olliePos.x -= ollieDir.x*ollieStep;
-			olliePos.y -= ollieDir.y*ollieStep;
-			olliePos.z -= ollieDir.z*ollieStep;
-		} else if(cameraType == 2) {
+		if(cameraType == 2) {
 			camPos.x -= camDir.x*step;
 			camPos.y -= camDir.y*step;
 			camPos.z -= camDir.z*step;
@@ -866,19 +899,15 @@ void updateScene() {
 	if(vehiclePos.z > MAX_XZ) vehiclePos.z = MAX_XZ;
 	if(vehiclePos.z < MIN_XZ) vehiclePos.z = MIN_XZ;
 	if (keyisdown(Astate)) {
-		if(cameraType == 1) {
-			ollieTheta -= .05;
-			recomputeOllieOrientation();
-		} else if(cameraType == 2) {
-			camPos.z -= 1;
+		if(cameraType == 2) {
+			// camPos.x += camDir.x*step;
+			// camPos.z += camDir.z*step;
 		}
 	}
 	if (keyisdown(Dstate)) {
-		if(cameraType == 1) {
-			ollieTheta += .05;
-			recomputeOllieOrientation();
-		} else if(cameraType == 2) {
-			camPos.z += 1;
+		if(cameraType == 2) {
+			// camPos.x -= camDir.x*step;
+			// camPos.z -= camDir.z*step;
 		}
 	}
 
