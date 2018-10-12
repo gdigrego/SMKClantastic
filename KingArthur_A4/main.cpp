@@ -494,12 +494,19 @@ static void keyboard_callback( GLFWwindow *window, int key, int scancode, int ac
 			CtrlState = action;
 			break;
 		}
+		// Key for arcball cam
 		case GLFW_KEY_1: {
 			cameraType = 1;
 			break;
 		}
+		// Key for freecam
 		case GLFW_KEY_2: {
 			cameraType = 2;
+			break;
+		}
+		// Key for first person cam
+		case GLFW_KEY_3: {
+			cameraType = 3;
 			break;
 		}
 	}
@@ -1026,6 +1033,13 @@ int main( int argc, char *argv[] ) {
 			glm::mat4 viewMtx = glm::lookAt( camPos,
 											 camDir + camPos,
 											 glm::vec3(  0,  1,  0 ) );
+
+			// multiply by the look at matrix - this is the same as our view martix
+					glMultMatrixf( &viewMtx[0][0] );
+		} else if(cameraType == 3) {
+			glm::mat4 viewMtx = glm::lookAt( olliePos + glm::vec3(0, 4.5, 1), // camera is located at camPos
+											 olliePos + glm::vec3(0, 4.5, 1) + ollieDir,		// camera is looking a point directly ahead
+											 glm::vec3(  0,  1,  0 ) );		// up vector is (0, 1, 0) - positive Y
 
 			// multiply by the look at matrix - this is the same as our view martix
 					glMultMatrixf( &viewMtx[0][0] );
