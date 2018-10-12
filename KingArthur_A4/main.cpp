@@ -30,9 +30,10 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <map>
 #include <sstream>
 #include <math.h>				// for cos(), sin() functionality
-#include <stdio.h>			// for printf functionality
+#include <stdio.h>			// for printf functionality 
 #include <stdlib.h>			// for exit functionality
 #include <time.h>			  // for time() functionality
 #include <SOIL/SOIL.h>
@@ -42,6 +43,7 @@
 #include "Hero.h"
 #include "Track.h"
 #include "Ollie.h"
+#include "KingArthurHero.h"
 
 using namespace std;
 //*************************************************************************************
@@ -128,6 +130,19 @@ glm::vec3 hero1RotAxis;
 glm::vec3 hero1Position;
 glm::vec3 hero1Normal;
 glm::vec3 hero1NextPoint;
+
+KingArthur ka;
+float hero2Dist = 0;
+int hero2ActiveCurve = 0;
+float hero2RotAngle;
+glm::vec3 hero2PrevAlign(0, 0, 1);
+glm::vec3 hero2RotAxis;
+glm::vec3 hero2Position;
+glm::vec3 hero2Normal;
+glm::vec3 hero2NextPoint;
+
+float totalDist = 0;
+map<float, float> curveDist;
 
 // step sizes for movement of cam or ollie
 float step = 1.0f;
@@ -686,6 +701,23 @@ void generateEnvironmentDL() {
 	for (unsigned int i = 0; i < track.size() - 1; i += 3) {
 		drawTraceSurface(track.at(i), track.at(i + 1), track.at(i + 2), track.at(i + 3), 100);
 	}
+
+	//Generate curve distances
+	glm::vec3 prevPoint(track.at(0));
+	for (unsigned int t = 0; t < (curveResolution * (track.size() - 1) / 3); t++) {
+		int curveNum = t / curveResolution;
+		glm::vec3 tPoint = evaluateBezierCurve(track.at(curveNum * 3), track.at(curveNum * 3 + 1),
+			track.at(curveNum * 3 + 2), track.at(curveNum * 3 + 3),
+			1.0f * (t % curveResolution) / curveResolution);
+
+		float dist = glm::length(tPoint - prevPoint);
+		totalDist += dist;
+
+		curveDist[totalDist] = t;
+
+		prevPoint = tPoint;
+	}
+
 	// add skybox and do corrective lighting
 	glDisable( GL_LIGHT0 );
 	glEnable ( GL_LIGHT1 );
@@ -768,6 +800,18 @@ void renderScene(void)  {
 
 	glMultMatrixf(&(glm::inverse(rotMtx))[0][0]);
 	glMultMatrixf(&(glm::inverse(transMtx2))[0][0]);
+	glMultMatrixf(&(glm::inverse(lookMtx))[0][0]);
+
+	//Draw hero 2
+	lookMtx = glm::inverse(glm::lookAt(hero2Position, hero2NextPoint, hero2Normal));
+	glMultMatrixf(&lookMtx[0][0]);
+
+	rotMtx = glm::rotate(glm::mat4(), glm::radians(90.0f), hero2Normal);
+	glMultMatrixf(&rotMtx[0][0]);
+
+	ka.draw(true);
+
+	glMultMatrixf(&(glm::inverse(rotMtx))[0][0]);
 	glMultMatrixf(&(glm::inverse(lookMtx))[0][0]);
 
 	// allways apply gravity to Ollie
@@ -1125,6 +1169,7 @@ int main( int argc, char *argv[] ) {
 
 		renderScene();					// draw everything to the window
 
+		//Update hero1
 		hero1ActiveCurve = hero1TPos / curveResolution;
 		hero1Position = evaluateBezierCurve(track.at(hero1ActiveCurve * 3), track.at(hero1ActiveCurve * 3 + 1),
 			track.at(hero1ActiveCurve * 3 + 2), track.at(hero1ActiveCurve * 3 + 3),
@@ -1153,6 +1198,58 @@ int main( int argc, char *argv[] ) {
 		glm::mat4 rotMtx1 = glm::rotate(glm::mat4(), glm::radians(-90.0f), rotationVector);
 		glm::vec4 normal = rotVec * rotMtx1;
 		hero1Normal = glm::normalize(glm::vec3(normal));
+
+		//Find hero2's T position
+		hero2Dist += 1;
+		float prevDist;
+		float nextDist;
+		float hero2T;
+		for (map<float, float>::iterator it = curveDist.begin(); it != curveDist.end(); ++it) {
+			if (it->first > hero2Dist) {
+				nextDist = it->first;
+
+				//Lerp the t value
+				float alpha = (hero2Dist - prevDist) / (nextDist - prevDist);
+				hero2T = curveDist[prevDist] * (1 - alpha) + curveDist[nextDist] * alpha;
+
+				break;
+			}
+			prevDist = it->first;
+
+			if (next(it) == curveDist.end()) {
+				hero2Dist = 0;
+			}
+		}
+
+		//Update hero2's position
+		hero2ActiveCurve = hero2T / curveResolution;
+		hero2Position = evaluateBezierCurve(track.at(hero2ActiveCurve * 3), track.at(hero2ActiveCurve * 3 + 1),
+			track.at(hero2ActiveCurve * 3 + 2), track.at(hero2ActiveCurve * 3 + 3),
+			1.0f * (hero2T - hero2ActiveCurve * curveResolution) / curveResolution);
+
+		int hero2nextT = curveDist[nextDist];
+		if (hero2nextT >= curveResolution * (track.size() - 1) / 3)		//If hero has gone through whole curve
+			hero2nextT = 0;
+
+		int hero2NextCurve = hero2nextT / curveResolution;
+		hero2NextPoint = evaluateBezierCurve(track.at(hero2NextCurve * 3), track.at(hero2NextCurve * 3 + 1),
+			track.at(hero2NextCurve * 3 + 2), track.at(hero2NextCurve * 3 + 3),
+			1.0f * (hero2nextT - hero2ActiveCurve * curveResolution) / curveResolution);
+
+		align = hero2NextPoint - hero2Position;
+		hero2RotAxis = glm::normalize(glm::cross(hero2PrevAlign, align));
+		hero2RotAngle = acos(glm::dot(hero2PrevAlign, align));
+		hero2PrevAlign = align;
+
+		tangent = evaluateBezierTangent(track.at(hero2ActiveCurve * 3), track.at(hero2ActiveCurve * 3 + 1),
+			track.at(hero2ActiveCurve * 3 + 2), track.at(hero2ActiveCurve * 3 + 3),
+			1.0f * (hero2T - hero2ActiveCurve * curveResolution) / curveResolution);
+		tangent = glm::normalize(tangent + hero2Position);
+		rotationVector = glm::cross(tangent, align);
+		rotVec = glm::vec4(rotationVector.x, rotationVector.y, rotationVector.z, 0);
+		rotMtx1 = glm::rotate(glm::mat4(), glm::radians(-90.0f), rotationVector);
+		normal = rotVec * rotMtx1;
+		hero2Normal = glm::normalize(glm::vec3(normal));
 
 		glfwSwapBuffers(window);// flush the OpenGL commands and make sure they get rendered!
 		glfwPollEvents();				// check for any events and signal to redraw screen
