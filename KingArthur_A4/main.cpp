@@ -30,6 +30,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <map>
 #include <sstream>
 #include <math.h>				// for cos(), sin() functionality
 #include <stdio.h>			// for printf functionality
@@ -42,6 +43,7 @@
 #include "Hero.h"
 #include "Track.h"
 #include "Ollie.h"
+#include "KingArthurHero.h"
 
 using namespace std;
 //*************************************************************************************
@@ -57,16 +59,9 @@ int leftMouseButton;    	 						// status of the mouse button
 glm::vec2 mousePos;			              		  	// last known X and Y of the mouse
 glm::vec3 vehiclePos, vehicleDir;                   // vehicle position and direction
 float arcballDistance;
-// arcball camera variables
 glm::vec3 camPos;            						// camera position in cartesian coordinates
 float cameraTheta, cameraPhi;               		// camera DIRECTION in spherical coordinates
 glm::vec3 camDir; 			                    	// camera DIRECTION in cartesian coordinates
-
-// ollie camera variables
-glm::vec3 ollieCamPos;
-float ollieCamTheta, ollieCamPhi;
-glm::vec3 ollieCamDir;
-
 float vehicleTheta;
 float wheelPhi;
 float step_size;
@@ -81,11 +76,6 @@ glm::vec3 camAngles;
 
 // models
 Ollie ollie;
-float t = 0;
-int curveNumber = 0;
-glm::vec3 olliePos = glm::vec3(5, 5, 5);
-glm::vec3 ollieDir;
-float ollieTheta;
 
 // THIS IS GOING TO BE UGLY! (but we're in it together)
 int CtrlState;
@@ -124,9 +114,19 @@ glm::vec3 hero1Position;
 glm::vec3 hero1Normal;
 glm::vec3 hero1NextPoint;
 
-// step sizes for movement of cam or ollie
-float step = 5.0f;
-float ollieStep = .5f;
+KingArthur ka;
+float hero2Dist = 0;
+int hero2ActiveCurve = 0;
+float hero2RotAngle;
+glm::vec3 hero2PrevAlign(0, 0, 1);
+glm::vec3 hero2RotAxis;
+glm::vec3 hero2Position;
+glm::vec3 hero2Normal;
+glm::vec3 hero2NextPoint;
+
+float totalDist = 0;
+map<float, float> curveDist;
+
 
 
 //*************************************************************************************
@@ -155,7 +155,7 @@ bool registerOpenGLTexture(unsigned char *textureData,
                            GLuint &textureHandle) {
 
     if( textureData == 0 ) {
-        fprintf(stderr,"Cannot register texture; no data specified.\n");
+        fprintf(stderr,"Cannot register texture; no data specified.");
         return false;
     }
 
@@ -370,30 +370,9 @@ void recomputeOrientation() {
 	//camPos = arcballDistance*camDir + vehiclePos;
 }
 
-void recomputeOllieCamOrientation() {
-	ollieCamDir = glm::vec3(
-		sin(ollieCamTheta)*sin(ollieCamPhi),
-		-cos(ollieCamPhi),
-		-cos(ollieCamTheta)*sin(ollieCamPhi)
-	);
-
-	glm::normalize(ollieCamDir);
-}
-
 void recomputeVehicleDirection() {
 	vehicleDir = glm::vec3(-sin(vehicleTheta), 0, cos(vehicleTheta));
 	glm::normalize(vehicleDir);
-}
-
-void recomputeOllieOrientation() {
-	// TODO #5: Convert spherical coordinates into a cartesian vector
-	// see Wednesday's slides for equations.  Extra Hint: Slide #70
-	ollieDir.x =  cosf(ollieTheta);
-    ollieDir.z = sinf(ollieTheta);
-
-    // and NORMALIZE this directional vector!!!
-    ollieDir = glm::normalize( ollieDir );
-
 }
 
 
@@ -426,22 +405,55 @@ static void keyboard_callback( GLFWwindow *window, int key, int scancode, int ac
 		}
 	}
 
-	switch(key) {
+	float step = 5.0f;
 
+	switch(key) {
 		case GLFW_KEY_W: {
 			Wstate = action;
+
+			if(cameraType == 1) {
+				vehiclePos.x += 1;
+			} else if(cameraType == 2) {
+				camPos.x += camDir.x*step;
+				camPos.y += camDir.y*step;
+				camPos.z += camDir.z*step;
+			}
+
 			break;
 		}
 		case GLFW_KEY_A: {
 			Astate = action;
+
+			if(cameraType == 1) {
+				vehiclePos.z -= 1;
+			} else if(cameraType == 2) {
+				camPos.z -= 1;
+			}
+
 			break;
 		}
 		case GLFW_KEY_S: {
 			Sstate = action;
+
+			if(cameraType == 1) {
+				vehiclePos.x -= 1;
+			} else if(cameraType == 2) {
+				camPos.x -= camDir.x*step;
+				camPos.y -= camDir.y*step;
+				camPos.z -= camDir.z*step;
+			}
+
 			break;
 		}
 		case GLFW_KEY_D: {
 			Dstate = action;
+
+			if(cameraType == 1) {
+				vehiclePos.z += 1;
+			} else if(cameraType == 2) {
+				camPos.z += 1;
+			}
+
 			break;
 		}
 		case GLFW_KEY_Z: {
@@ -498,29 +510,17 @@ static void keyboard_callback( GLFWwindow *window, int key, int scancode, int ac
 //
 ////////////////////////////////////////////////////////////////////////////////
 static void cursor_callback( GLFWwindow *window, double x, double y ) {
-	if(cameraType == 2) {
-		if (leftMouseButton == GLFW_PRESS && keyisdown(CtrlState)) {
-			arcballDistance += (y - mousePos.y)*(0.005);
-		}
-		else if( leftMouseButton == GLFW_PRESS ) {
-			cameraTheta += (x - mousePos.x)*(0.005);
-			cameraPhi += (mousePos.y - y)*(0.005);
-			if (cameraPhi <= 0)
-				cameraPhi = 0 + 0.001;
-			if (cameraPhi >= M_PI)
-				cameraPhi = M_PI - 0.001;
-			recomputeOrientation();     // update camera direction based on (theta,phi)
-		}
-	} else if(cameraType == 1) {
-		if( leftMouseButton == GLFW_PRESS ) {
-			ollieCamTheta += (x - mousePos.x)*(0.005);
-			ollieCamPhi += (mousePos.y - y)*(0.005);
-			if (ollieCamPhi <= 0)
-				ollieCamPhi = 0 + 0.001;
-			if (ollieCamPhi >= M_PI)
-				ollieCamPhi = M_PI - 0.001;
-			recomputeOllieCamOrientation();     // update camera direction based on (theta,phi)
-		}
+	if (leftMouseButton == GLFW_PRESS && keyisdown(CtrlState)) {
+		arcballDistance += (y - mousePos.y)*(0.005);
+	}
+	else if( leftMouseButton == GLFW_PRESS ) {
+		cameraTheta += (x - mousePos.x)*(0.005);
+		cameraPhi += (mousePos.y - y)*(0.005);
+		if (cameraPhi <= 0)
+			cameraPhi = 0 + 0.001;
+		if (cameraPhi >= M_PI)
+			cameraPhi = M_PI - 0.001;
+		recomputeOrientation();     // update camera direction based on (theta,phi)
 	}
 	mousePos.x = x;
 	mousePos.y = y;
@@ -571,49 +571,6 @@ void drawGrid() {
 	glEnable( GL_LIGHTING );
 }
 
-void drawBezierCurve() {
-
-	if (!hideCage) {
-			glColor3f(0, 1, 0);
-		for (unsigned int i = 0; i < controlPoints.size(); i++) {
-			glm::mat4 transMtx = glm::translate(identity, controlPoints[i]);
-			glMultMatrixf(&transMtx[0][0]);
-			CSCI441::drawSolidSphere(0.4, 20, 20);
-			glMultMatrixf(&(glm::inverse(transMtx))[0][0]);
-		}
-		glDisable(GL_LIGHTING);
-		glColor3f(1, 1, 0);
-		glLineWidth(3.0f);
-
-		glBegin(GL_LINE_STRIP);
-		for (unsigned int i = 0; i < controlPoints.size(); i++) {
-
-			glVertex3f(controlPoints[i].x, controlPoints[i].y, controlPoints[i].z);
-		}
-		glEnd();
-	}
-	glColor3f(0, 0, 1);
-	for(unsigned int i = 0; i + 3 < controlPoints.size(); i+=3) {
-		vector<glm::vec3> bezierCoefficients = getCoefficients(
-			controlPoints[i],
-			controlPoints[i + 1],
-			controlPoints[i + 2],
-			controlPoints[i + 3]
-		);
-		if (!hideBezierCurve) {
-			renderBezierSegment(
-				bezierCoefficients[0],
-				bezierCoefficients[1],
-				bezierCoefficients[2],
-				bezierCoefficients[3],
-				controlPoints[i + 3],
-				30
-			);
-		}
-	}
-	glEnable(GL_LIGHTING);
-}
-
 // generateEnvironmentDL() /////////////////////////////////////////////////////
 // This function creates a display list with the code to draw a simple
 //      environment for the user to navigate through.
@@ -641,6 +598,23 @@ void generateEnvironmentDL() {
 	for (unsigned int i = 0; i < track.size() - 1; i += 3) {
 		drawTraceSurface(track.at(i), track.at(i + 1), track.at(i + 2), track.at(i + 3), 100);
 	}
+
+	//Generate curve distances
+	glm::vec3 prevPoint(track.at(0));
+	for (unsigned int t = 0; t < (curveResolution * (track.size() - 1) / 3); t++) {
+		int curveNum = t / curveResolution;
+		glm::vec3 tPoint = evaluateBezierCurve(track.at(curveNum * 3), track.at(curveNum * 3 + 1),
+			track.at(curveNum * 3 + 2), track.at(curveNum * 3 + 3),
+			1.0f * (t % curveResolution) / curveResolution);
+
+		float dist = glm::length(tPoint - prevPoint);
+		totalDist += dist;
+
+		curveDist[totalDist] = t;
+
+		prevPoint = tPoint;
+	}
+
 	// add skybox and do corrective lighting
 	glDisable( GL_LIGHT0 );
 	glEnable ( GL_LIGHT1 );
@@ -693,23 +667,20 @@ void generateEnvironmentDL() {
 void renderScene(void)  {
 	glCallList(environmentDL);
 
-	/*
-	transMtx1 = glm::translate(glm::mat4(), hero1Position);
-	glMultMatrixf(&transMtx1[0][0]);
+	// use this for ollie to follow track curve
+	glm::mat4 transMtx1 = glm::translate(glm::mat4(), glm::vec3(5, 0, 5));
+	glMultMatrixf( &transMtx1[0][0] );
 
-	glm::mat4 transMtx2 = glm::translate(glm::mat4(), hero1Normal * 1.5f);
-	glMultMatrixf(&transMtx2[0][0]);
+	glm::mat4 scaleMtx = glm::scale( glm::mat4(), glm::vec3(.0625, .0625, .0625) );
+	glMultMatrixf( &scaleMtx[0][0] );
 
-	glm::mat4 rotMtx = glm::rotate(glm::mat4(), -hero1RotAngle, hero1RotAxis);
-	glMultMatrixf(&rotMtx[0][0]);
+	ollie.draw();
 
-	ds.draw(true);
+	glMultMatrixf( &( glm::inverse( scaleMtx ) )[0][0] );
 
-	glMultMatrixf(&(glm::inverse(rotMtx))[0][0]);
-	glMultMatrixf(&(glm::inverse(transMtx2))[0][0]);
-	glMultMatrixf(&(glm::inverse(transMtx1))[0][0]);
-	*/
+	glMultMatrixf( &( glm::inverse( transMtx1 ) )[0][0] );
 
+	//Draw hero 1
 	glm::mat4 lookMtx = glm::inverse(glm::lookAt(hero1Position, hero1NextPoint, hero1Normal));
 	glMultMatrixf(&lookMtx[0][0]);
 
@@ -725,22 +696,18 @@ void renderScene(void)  {
 	glMultMatrixf(&(glm::inverse(transMtx2))[0][0]);
 	glMultMatrixf(&(glm::inverse(lookMtx))[0][0]);
 
-	// allways apply gravity to Ollie
-	// or always be sitting on surface????
-	glm::mat4 transMtxOllie = glm::translate(glm::mat4(), olliePos);
-	glMultMatrixf(&transMtxOllie[0][0]);
+	//Draw hero 2
+	lookMtx = glm::inverse(glm::lookAt(hero2Position, hero2NextPoint, hero2Normal));
+	glMultMatrixf(&lookMtx[0][0]); 
 
-	glm::mat4 scaleMtxOllie = glm::scale(glm::mat4(), glm::vec3(.0625, .0625, .0625));
-	glMultMatrixf(&scaleMtxOllie[0][0]);
+	rotMtx = glm::rotate(glm::mat4(), glm::radians(90.0f), hero2Normal);
+	glMultMatrixf(&rotMtx[0][0]);
 
-	glm::mat4 rotMtxOllie = glm::rotate(glm::mat4(), -ollieTheta-glm::radians(270.0f), glm::vec3(0, 1.0f, 0));
-	glMultMatrixf( &rotMtxOllie[0][0]);
+	ka.draw(true);
 
-	ollie.draw(true);
-
-	glMultMatrixf(&(glm::inverse(scaleMtxOllie))[0][0]);
-	glMultMatrixf(&(glm::inverse(transMtxOllie))[0][0]);
-}
+	glMultMatrixf(&(glm::inverse(rotMtx))[0][0]);
+	glMultMatrixf(&(glm::inverse(lookMtx))[0][0]);
+} 
 
 //*************************************************************************************
 //
@@ -840,54 +807,26 @@ void setupOpenGL() {
 //
 void updateScene() {
 	if (keyisdown(Wstate)) {
-		if(cameraType == 1) {
-			olliePos.x += ollieDir.x*ollieStep;
-			olliePos.y += ollieDir.y*ollieStep;
-			olliePos.z += ollieDir.z*ollieStep;
-		} else if(cameraType == 2) {
-			camPos.x += camDir.x*step;
-			camPos.y += camDir.y*step;
-			camPos.z += camDir.z*step;
-		}
+		vehiclePos += vehicleDir*step_size;
+		wheelPhi += step_size;
 	}
 	if (keyisdown(Sstate)) {
-		if(cameraType == 1) {
-			olliePos.x -= ollieDir.x*ollieStep;
-			olliePos.y -= ollieDir.y*ollieStep;
-			olliePos.z -= ollieDir.z*ollieStep;
-		} else if(cameraType == 2) {
-			camPos.x -= camDir.x*step;
-			camPos.y -= camDir.y*step;
-			camPos.z -= camDir.z*step;
-		}
+		vehiclePos -= vehicleDir*step_size;
+		wheelPhi -= step_size;
 	}
 	if(vehiclePos.x > MAX_XZ) vehiclePos.x = MAX_XZ;
 	if(vehiclePos.x < MIN_XZ) vehiclePos.x = MIN_XZ;
 	if(vehiclePos.z > MAX_XZ) vehiclePos.z = MAX_XZ;
 	if(vehiclePos.z < MIN_XZ) vehiclePos.z = MIN_XZ;
 	if (keyisdown(Astate)) {
-		if(cameraType == 1) {
-			ollieTheta -= .05;
-			recomputeOllieOrientation();
-		} else if(cameraType == 2) {
-			camPos.z -= 1;
-		}
+		vehicleTheta -= step_size;
 	}
 	if (keyisdown(Dstate)) {
-		if(cameraType == 1) {
-			ollieTheta += .05;
-			recomputeOllieOrientation();
-		} else if(cameraType == 2) {
-			camPos.z += 1;
-		}
+		vehicleTheta += step_size;
 	}
 
 	recomputeVehicleDirection();
-
-	// Move Ollie along track curve every time updateScene is called
-
 }
-
 void setupScene() {
 	// give the camera a scenic starting point.
 	arcballDistance = 20;
@@ -896,11 +835,6 @@ void setupScene() {
 	vehicleTheta = 1;
 	cameraTheta = -M_PI / 3.0f;
 	cameraPhi = 2.37753;
-	ollieCamTheta = -M_PI / 3.0f;
-	ollieCamPhi = 2.37753;
-	recomputeOllieCamOrientation();
-	ollieTheta = 0;
-	recomputeOllieOrientation();
 	camPos = glm::vec3(50, 50, 50);
 	camDir = camPos - glm::vec3(0, 0, 0);
 	wheelPhi = 0;
@@ -958,7 +892,6 @@ int main( int argc, char *argv[] ) {
 	//	until the user decides to close the window and quit the program.  Without a loop, the
 	//	window will display once and then the program exits.
 	while( !glfwWindowShouldClose(window) ) {	// check if the window was instructed to be closed
-
 		glDrawBuffer( GL_BACK );				// work with our back frame buffer
 		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );	// clear the current color contents and depth buffer in the window
 
@@ -986,8 +919,8 @@ int main( int argc, char *argv[] ) {
 		// set up our look at matrix to position our camera
 		// TODO #6: Change how our lookAt matrix gets constructed
 		if(cameraType == 1) {
-			glm::mat4 viewMtx = glm::lookAt( ollieCamDir*arcballDistance + olliePos, // camera is located at camPos
-											 olliePos,		// camera is looking a point directly ahead
+			glm::mat4 viewMtx = glm::lookAt( camDir*arcballDistance + vehiclePos, // camera is located at camPos
+											 vehiclePos,		// camera is looking a point directly ahead
 											 glm::vec3(  0,  1,  0 ) );		// up vector is (0, 1, 0) - positive Y
 
 			// multiply by the look at matrix - this is the same as our view martix
@@ -995,7 +928,7 @@ int main( int argc, char *argv[] ) {
 		} else if(cameraType == 2) {
 			// set up our look at matrix to position our camera
 			glm::mat4 viewMtx = glm::lookAt( camPos,
-											 camDir + camPos,
+											 camPos + camDir,
 											 glm::vec3(  0,  1,  0 ) );
 
 			// multiply by the look at matrix - this is the same as our view martix
@@ -1008,6 +941,7 @@ int main( int argc, char *argv[] ) {
 
 		renderScene();					// draw everything to the window
 
+		//Update hero1's position
 		hero1ActiveCurve = hero1TPos / curveResolution;
 		hero1Position = evaluateBezierCurve(track.at(hero1ActiveCurve * 3), track.at(hero1ActiveCurve * 3 + 1),
 			track.at(hero1ActiveCurve * 3 + 2), track.at(hero1ActiveCurve * 3 + 3),
@@ -1028,7 +962,7 @@ int main( int argc, char *argv[] ) {
 		hero1PrevAlign = align;
 
 		glm::vec3 tangent = evaluateBezierTangent(track.at(hero1NextCurve * 3), track.at(hero1NextCurve * 3 + 1),
-			track.at(hero1NextCurve * 3 + 2), track.at(hero1NextCurve * 3 + 3),
+			track.at(hero1NextCurve * 3 + 2), track.at(hero1NextCurve * 3 + 3), 
 			1.0f * (hero1TPos % curveResolution) / curveResolution);
 		tangent = glm::normalize(tangent + hero1Position);
 		glm::vec3 rotationVector = glm::cross(tangent, align);
@@ -1037,11 +971,63 @@ int main( int argc, char *argv[] ) {
 		glm::vec4 normal = rotVec * rotMtx1;
 		hero1Normal = glm::normalize(glm::vec3(normal));
 
+		//Find hero2's T position
+		hero2Dist += 1;
+		float prevDist;
+		float nextDist;
+		float hero2T;
+		for (map<float, float>::iterator it = curveDist.begin(); it != curveDist.end(); ++it) {
+			if (it->first > hero2Dist) {
+				nextDist = it->first;
+
+				//Lerp the t value
+				float alpha = (hero2Dist - prevDist) / (nextDist - prevDist);
+				hero2T = curveDist[prevDist] * (1 - alpha) + curveDist[nextDist] * alpha;
+
+				break;
+			}
+			prevDist = it->first;
+
+			if (next(it) == curveDist.end()) {
+				hero2Dist = 0;
+			}
+		}
+
+		//Update hero2's position
+		hero2ActiveCurve = hero2T / curveResolution;
+		hero2Position = evaluateBezierCurve(track.at(hero2ActiveCurve * 3), track.at(hero2ActiveCurve * 3 + 1),
+			track.at(hero2ActiveCurve * 3 + 2), track.at(hero2ActiveCurve * 3 + 3),
+			1.0f * (hero2T - hero2ActiveCurve * curveResolution) / curveResolution);
+
+		int hero2nextT = curveDist[nextDist];
+		if (hero2nextT >= curveResolution * (track.size() - 1) / 3)		//If hero has gone through whole curve
+			hero2nextT = 0;
+
+		int hero2NextCurve = hero2nextT / curveResolution;
+		hero2NextPoint = evaluateBezierCurve(track.at(hero2NextCurve * 3), track.at(hero2NextCurve * 3 + 1),
+			track.at(hero2NextCurve * 3 + 2), track.at(hero2NextCurve * 3 + 3),
+			1.0f * (hero2nextT - hero2ActiveCurve * curveResolution) / curveResolution);
+
+		align = hero2NextPoint - hero2Position;
+		hero2RotAxis = glm::normalize(glm::cross(hero2PrevAlign, align));
+		hero2RotAngle = acos(glm::dot(hero2PrevAlign, align));
+		hero2PrevAlign = align;
+
+		tangent = evaluateBezierTangent(track.at(hero2ActiveCurve * 3), track.at(hero2ActiveCurve * 3 + 1),
+			track.at(hero2ActiveCurve * 3 + 2), track.at(hero2ActiveCurve * 3 + 3),
+			1.0f * (hero2T - hero2ActiveCurve * curveResolution) / curveResolution);
+		tangent = glm::normalize(tangent + hero2Position);
+		rotationVector = glm::cross(tangent, align);
+		rotVec = glm::vec4(rotationVector.x, rotationVector.y, rotationVector.z, 0);
+		rotMtx1 = glm::rotate(glm::mat4(), glm::radians(-90.0f), rotationVector);
+		normal = rotVec * rotMtx1;
+		hero2Normal = glm::normalize(glm::vec3(normal));
+
+
 		glfwSwapBuffers(window);// flush the OpenGL commands and make sure they get rendered!
 		glfwPollEvents();				// check for any events and signal to redraw screen
 
 		updateScene();
-
 	}
 
 	glfwDestroyWindow( window );// clean up and close our window
