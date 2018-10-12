@@ -62,7 +62,8 @@ glm::vec3 camPos;            						// camera position in cartesian coordinates
 float cameraTheta, cameraPhi;               		// camera DIRECTION in spherical coordinates
 glm::vec3 camDir; 			                    	// camera DIRECTION in cartesian coordinates
 
-// ollie camera variables
+// ollie camera variablesc
+
 glm::vec3 ollieCamPos;
 float ollieCamTheta, ollieCamPhi;
 glm::vec3 ollieCamDir;
@@ -80,10 +81,12 @@ bool keysDown[256] = {0};
 glm::vec3 camAngles;
 
 // models
+
 Ollie ollie;
 float t = 0;
 int curveNumber = 0;
-glm::vec3 olliePos = glm::vec3(5, 5, 5);
+glm::vec3 ollieParams;
+glm::vec3 olliePos;
 glm::vec3 ollieDir;
 float ollieTheta;
 
@@ -128,7 +131,7 @@ glm::vec3 hero1NextPoint;
 
 // step sizes for movement of cam or ollie
 float step = 1.0f;
-float ollieStep = .5f;
+float ollieStep = .1f;
 
 
 //*************************************************************************************
@@ -883,9 +886,10 @@ void setupOpenGL() {
 void updateScene() {
 
 	if(keyisdown(upState)) {
-		olliePos.x += ollieDir.x*ollieStep;
-		olliePos.y += ollieDir.y*ollieStep;
-		olliePos.z += ollieDir.z*ollieStep;
+		ollieParams.x += ollieDir.x*ollieStep;
+		ollieParams.y += ollieDir.y*ollieStep;
+		ollieParams.z += ollieDir.z*ollieStep;
+
 	}
 
 	if(keyisdown(leftState)) {
@@ -894,9 +898,9 @@ void updateScene() {
 	}
 
 	if(keyisdown(downState)) {
-		olliePos.x -= ollieDir.x*ollieStep;
-		olliePos.y -= ollieDir.y*ollieStep;
-		olliePos.z -= ollieDir.z*ollieStep;
+		ollieParams.x -= ollieDir.x*ollieStep;
+		ollieParams.y -= ollieDir.y*ollieStep;
+		ollieParams.z -= ollieDir.z*ollieStep;
 	}
 
 	if(keyisdown(rightState)) {
@@ -934,6 +938,10 @@ void updateScene() {
 			// camPos.z -= camDir.z*step;
 		}
 	}
+	olliePos = evaluateBezierSurface(
+		controlPoints,
+		(float) ollieParams.z / curveResolution,
+		(float) ollieParams.x / curveResolution);
 
 	recomputeVehicleDirection();
 
@@ -943,6 +951,8 @@ void updateScene() {
 
 void setupScene() {
 	// give the camera a scenic starting point.
+	ollieParams = glm::vec3(5, 0, 5);
+	olliePos = glm::vec3(5,0,5);
 	arcballDistance = 20;
 	vehiclePos = glm::vec3(0, 0, 0);
 	vehicleDir = glm::vec3(1, 0, 0);
@@ -1063,6 +1073,7 @@ int main( int argc, char *argv[] ) {
 				// arcball camera for King Arthur
 				case 6: {
 
+					break;
 				}
 			}
 
@@ -1097,6 +1108,12 @@ int main( int argc, char *argv[] ) {
 
 					// multiply by the look at matrix - this is the same as our view martix
 					glMultMatrixf( &viewMtx[0][0] );
+					break;
+				}
+
+				// First person camera for King Arthur
+				case 6: {
+
 					break;
 				}
 			}
