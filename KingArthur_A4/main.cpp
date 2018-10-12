@@ -33,7 +33,7 @@
 #include <map>
 #include <sstream>
 #include <math.h>				// for cos(), sin() functionality
-#include <stdio.h>			// for printf functionality 
+#include <stdio.h>			// for printf functionality
 #include <stdlib.h>			// for exit functionality
 #include <time.h>			  // for time() functionality
 #include <SOIL/SOIL.h>
@@ -934,6 +934,18 @@ void updateScene() {
 		ollieParams.y += ollieDir.y*ollieStep;
 		ollieParams.z += ollieDir.z*ollieStep;
 
+		if(ollieParams.x <= 1) {
+			ollieParams.x = 1;
+		} else if(ollieParams.x >= 99) {
+			ollieParams.x = 99;
+		}
+
+		if(ollieParams.z <= 1) {
+			ollieParams.z = 1;
+		} else if(ollieParams.z >= 99) {
+			ollieParams.z = 99;
+		}
+
 	}
 
 	if(keyisdown(leftState)) {
@@ -945,6 +957,18 @@ void updateScene() {
 		ollieParams.x -= ollieDir.x*ollieStep;
 		ollieParams.y -= ollieDir.y*ollieStep;
 		ollieParams.z -= ollieDir.z*ollieStep;
+
+		if(ollieParams.x <= 1) {
+			ollieParams.x = 1;
+		} else if(ollieParams.x >= 99) {
+			ollieParams.x = 99;
+		}
+
+		if(ollieParams.z <= 1) {
+			ollieParams.z = 1;
+		} else if(ollieParams.z >= 99) {
+			ollieParams.z = 99;
+		}
 	}
 
 	if(keyisdown(rightState)) {
@@ -982,10 +1006,12 @@ void updateScene() {
 			// camPos.z -= camDir.z*step;
 		}
 	}
+
 	olliePos = evaluateBezierSurface(
 		controlPoints,
 		(float) ollieParams.z / curveResolution,
 		(float) ollieParams.x / curveResolution);
+
 
 	recomputeVehicleDirection();
 
@@ -1116,7 +1142,11 @@ int main( int argc, char *argv[] ) {
 
 				// arcball camera for King Arthur
 				case 6: {
-
+					glm::mat4 viewMtx = glm::lookAt( ollieCamDir*arcballDistance + hero2Position,
+													 hero2Position,
+													 glm::vec3( 0, 1, 0 ) );
+					// multiply by the look at matrix - this is the same as our view martix
+					glMultMatrixf( &viewMtx[0][0] );
 					break;
 				}
 			}
@@ -1148,7 +1178,7 @@ int main( int argc, char *argv[] ) {
 
 					glm::mat4 viewMtx = glm::lookAt( hero1Position + glm::vec3(0, 5, 0), // camera is located at camPos
 													 hero1Position + glm::vec3(0, 5, 0) + hero1DirectionVec,		// camera is looking a point directly ahead
-													 glm::vec3(  0,  1,  0 ) );		// up vector is (0, 1, 0) - positive Y
+													 hero1Normal );		// up vector is (0, 1, 0) - positive Y
 
 					// multiply by the look at matrix - this is the same as our view martix
 					glMultMatrixf( &viewMtx[0][0] );
@@ -1157,7 +1187,14 @@ int main( int argc, char *argv[] ) {
 
 				// First person camera for King Arthur
 				case 6: {
+					glm::vec3 hero2DirectionVec = hero2NextPoint - hero2Position;
 
+					glm::mat4 viewMtx = glm::lookAt( hero2Position + glm::vec3(0, 8, 0), // camera is located at camPos
+													 hero2Position + glm::vec3(0, 8, 0) + hero2DirectionVec,		// camera is looking a point directly ahead
+													 hero2Normal );		// up vector is (0, 1, 0) - positive Y
+
+					// multiply by the look at matrix - this is the same as our view martix
+					glMultMatrixf( &viewMtx[0][0] );
 					break;
 				}
 			}
