@@ -819,24 +819,22 @@ void renderScene(void)  {
 
 	// allways apply gravity to Ollie
 	// or always be sitting on surface????
-	glm::mat4 transMtxOllie = glm::translate(glm::mat4(), olliePos);
-	glMultMatrixf(&transMtxOllie[0][0]);
+
+	glm::vec3 OllieNextPoint = evaluateBezierSurface(controlPoints, (float)(ollieParams.z + ollieDir.z) / curveResolution, (float)(ollieParams.x + ollieDir.x) / curveResolution);
+	lookMtx = glm::inverse(glm::lookAt(olliePos, OllieNextPoint, ollieNormal));
+	glMultMatrixf(&lookMtx[0][0]);
 
 	glm::mat4 scaleMtxOllie = glm::scale(glm::mat4(), glm::vec3(.0625, .0625, .0625));
 	glMultMatrixf(&scaleMtxOllie[0][0]);
 
-	glm::mat4 rotMtxOllie = glm::rotate(glm::mat4(), -ollieTheta-glm::radians(270.0f), glm::vec3(0, 1.0f, 0));
+	glm::mat4 rotMtxOllie = glm::rotate(glm::mat4(), glm::radians(180.0f), glm::vec3(0,1,0));
 	glMultMatrixf( &rotMtxOllie[0][0]);
-
-	glm::mat4 rotMtxOllie2 = glm::rotate(glm::mat4(), ollieThetaChange, ollieNormRotAxis);
-	glMultMatrixf( &rotMtxOllie2[0][0]);
 
 	ollie.draw(true);
 
-	glMultMatrixf(&(glm::inverse(rotMtxOllie2))[0][0]);
+	glMultMatrixf(&(glm::inverse(lookMtx))[0][0]);
 	glMultMatrixf(&(glm::inverse(rotMtxOllie))[0][0]);
 	glMultMatrixf(&(glm::inverse(scaleMtxOllie))[0][0]);
-	glMultMatrixf(&(glm::inverse(transMtxOllie))[0][0]);
 }
 
 //*************************************************************************************
@@ -1021,22 +1019,20 @@ void updateScene() {
 		(float) ollieParams.x / curveResolution);
 
 	glm::vec3 normPoint1 = evaluateBezierSurface( controlPoints, (float) ollieParams.z / curveResolution, (float) ollieParams.x / curveResolution);
-	glm::vec3 normPoint2 = evaluateBezierSurface( controlPoints, (float) (ollieParams.z + ollieDir.z) / curveResolution, (float) (ollieParams.x + ollieDir.x) / curveResolution );
-	glm::vec3 normPoint3 = evaluateBezierSurface( controlPoints, (float) (ollieParams.z + 1) / curveResolution, (float) (ollieParams.x + 1) / curveResolution );
+	glm::vec3 normPoint2 = evaluateBezierSurface( controlPoints, (float) (ollieParams.z) / curveResolution, (float) (ollieParams.x + 1) / curveResolution );
+	glm::vec3 normPoint3 = evaluateBezierSurface( controlPoints, (float) (ollieParams.z + 1) / curveResolution, (float) (ollieParams.x) / curveResolution );
 
 	glm::vec3 normV1 = normPoint2 - normPoint1;
 	glm::vec3 normV2 = normPoint3 - normPoint1;
 
 
 	glm::vec3 surfNormVec = glm::cross(normV2, normV1);
-	surfNormVec = glm::normalize(surfNormVec);
-	if(surfNormVec.y < 0) {
-		surfNormVec = -surfNormVec;
-	}
-	ollieNormRotAxis = glm::cross(glm::vec3(0, 1, 0), surfNormVec);
-	ollieThetaChange = acos(glm::dot(glm::vec3(0, 1, 0), surfNormVec));
-
-	recomputeVehicleDirection();
+	ollieNormal = glm::normalize(surfNormVec);
+	//if(surfNormVec.y < 0) {
+	//	surfNormVec = -surfNormVec;
+	//}
+	//ollieNormRotAxis = glm::cross(glm::vec3(0, 1, 0), surfNormVec);
+	//ollieThetaChange = acos(glm::dot(glm::vec3(0, 1, 0), surfNormVec));
 
 	// Move Ollie along track curve every time updateScene is called
 
