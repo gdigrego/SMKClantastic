@@ -91,6 +91,9 @@ glm::vec3 ollieParams;
 glm::vec3 olliePos;
 glm::vec3 ollieDir;
 float ollieTheta;
+glm::vec3 ollieNormal;
+float ollieThetaChange;
+glm::vec3 ollieNormRotAxis;
 
 // THIS IS GOING TO BE UGLY! (but we're in it together)
 int CtrlState;
@@ -825,8 +828,13 @@ void renderScene(void)  {
 	glm::mat4 rotMtxOllie = glm::rotate(glm::mat4(), -ollieTheta-glm::radians(270.0f), glm::vec3(0, 1.0f, 0));
 	glMultMatrixf( &rotMtxOllie[0][0]);
 
+	glm::mat4 rotMtxOllie2 = glm::rotate(glm::mat4(), ollieThetaChange, ollieNormRotAxis);
+	glMultMatrixf( &rotMtxOllie2[0][0]);
+
 	ollie.draw(true);
 
+	glMultMatrixf(&(glm::inverse(rotMtxOllie2))[0][0]);
+	glMultMatrixf(&(glm::inverse(rotMtxOllie))[0][0]);
 	glMultMatrixf(&(glm::inverse(scaleMtxOllie))[0][0]);
 	glMultMatrixf(&(glm::inverse(transMtxOllie))[0][0]);
 }
@@ -1012,6 +1020,21 @@ void updateScene() {
 		(float) ollieParams.z / curveResolution,
 		(float) ollieParams.x / curveResolution);
 
+	glm::vec3 normPoint1 = evaluateBezierSurface( controlPoints, (float) ollieParams.z / curveResolution, (float) ollieParams.x / curveResolution);
+	glm::vec3 normPoint2 = evaluateBezierSurface( controlPoints, (float) (ollieParams.z + ollieDir.z) / curveResolution, (float) (ollieParams.x + ollieDir.x) / curveResolution );
+	glm::vec3 normPoint3 = evaluateBezierSurface( controlPoints, (float) (ollieParams.z + 1) / curveResolution, (float) (ollieParams.x + 1) / curveResolution );
+
+	glm::vec3 normV1 = normPoint2 - normPoint1;
+	glm::vec3 normV2 = normPoint3 - normPoint1;
+
+
+	glm::vec3 surfNormVec = glm::cross(normV2, normV1);
+	surfNormVec = glm::normalize(surfNormVec);
+	if(surfNormVec.y < 0) {
+		surfNormVec = -surfNormVec;
+	}
+	ollieNormRotAxis = glm::cross(glm::vec3(0, 1, 0), surfNormVec);
+	ollieThetaChange = acos(glm::dot(glm::vec3(0, 1, 0), surfNormVec));
 
 	recomputeVehicleDirection();
 
@@ -1023,6 +1046,7 @@ void setupScene() {
 	// give the camera a scenic starting point.
 	ollieParams = glm::vec3(5, 0, 5);
 	olliePos = glm::vec3(5,0,5);
+	ollieNormal = glm::vec3(0, 1, 0);
 	arcballDistance = 20;
 	vehiclePos = glm::vec3(0, 0, 0);
 	vehicleDir = glm::vec3(1, 0, 0);
