@@ -85,6 +85,7 @@ int Sstate;
 int Dstate;
 bool hideCage;
 bool hideBezierCurve;
+int upState, leftState, rightState, downState;
 
 glm::mat4 identity = glm::mat4(1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1);
 
@@ -127,6 +128,9 @@ glm::vec3 hero2NextPoint;
 float totalDist = 0;
 map<float, float> curveDist;
 
+// step sizes for movement of cam or ollie
+float step = 1.0f;
+float ollieStep = .5f;
 
 
 //*************************************************************************************
@@ -408,6 +412,22 @@ static void keyboard_callback( GLFWwindow *window, int key, int scancode, int ac
 	float step = 5.0f;
 
 	switch(key) {
+		case GLFW_KEY_UP:{
+			upState = action;
+			break;
+		}
+		case GLFW_KEY_LEFT: {
+			leftState = action;
+			break;
+		}
+		case GLFW_KEY_DOWN: {
+			downState = action;
+			break;
+		}
+		case GLFW_KEY_RIGHT: {
+			rightState = action;
+			break;
+		}
 		case GLFW_KEY_W: {
 			Wstate = action;
 
@@ -806,23 +826,60 @@ void setupOpenGL() {
 //	initial starting point and generate the display list for our city
 //
 void updateScene() {
+
+	if(keyisdown(upState)) {
+		olliePos.x += ollieDir.x*ollieStep;
+		olliePos.y += ollieDir.y*ollieStep;
+		olliePos.z += ollieDir.z*ollieStep;
+	}
+
+	if(keyisdown(leftState)) {
+		ollieTheta -= .05;
+		recomputeOllieOrientation();
+	}
+
+	if(keyisdown(downState)) {
+		olliePos.x -= ollieDir.x*ollieStep;
+		olliePos.y -= ollieDir.y*ollieStep;
+		olliePos.z -= ollieDir.z*ollieStep;
+	}
+
+	if(keyisdown(rightState)) {
+		ollieTheta += .05;
+		recomputeOllieOrientation();
+	}
+
 	if (keyisdown(Wstate)) {
-		vehiclePos += vehicleDir*step_size;
-		wheelPhi += step_size;
+		if(cameraType == 2) {
+			camPos.x += camDir.x*step;
+			camPos.y += camDir.y*step;
+			camPos.z += camDir.z*step;
+		}
 	}
 	if (keyisdown(Sstate)) {
-		vehiclePos -= vehicleDir*step_size;
-		wheelPhi -= step_size;
+		if(cameraType == 2) {
+			camPos.x -= camDir.x*step;
+			camPos.y -= camDir.y*step;
+			camPos.z -= camDir.z*step;
+		}
 	}
 	if(vehiclePos.x > MAX_XZ) vehiclePos.x = MAX_XZ;
 	if(vehiclePos.x < MIN_XZ) vehiclePos.x = MIN_XZ;
 	if(vehiclePos.z > MAX_XZ) vehiclePos.z = MAX_XZ;
 	if(vehiclePos.z < MIN_XZ) vehiclePos.z = MIN_XZ;
+
 	if (keyisdown(Astate)) {
-		vehicleTheta -= step_size;
+		if(cameraType == 2) {
+			// camPos.x += camDir.x*step;
+			// camPos.z += camDir.z*step;
+		}
 	}
 	if (keyisdown(Dstate)) {
-		vehicleTheta += step_size;
+		if(cameraType == 2) {
+			// camPos.x -= camDir.x*step;
+			// camPos.z -= camDir.z*step;
+		}
+>>>>>>> 4df1caeadfcdb94326415fe50cf4862d1018868f
 	}
 
 	recomputeVehicleDirection();
