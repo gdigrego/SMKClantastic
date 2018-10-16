@@ -76,13 +76,11 @@ float wheelPhi;
 float step_size;
 GLuint environmentDL;                       		// display list for the 'city'
 std::vector<glm::vec3> controlPoints;
-float MAX_XZ = 50;
-float MIN_XZ = -50;
 int curveResolution;
 int cameraType = 2;
 bool keysDown[256] = {0};
 glm::vec3 camAngles;
-
+int xyz_min_max[6] = {100,100,100,0,0,0};
 // models
 
 Ollie ollie;
@@ -150,7 +148,7 @@ map<float, float> curveDist;
 
 // step sizes for movement of cam or ollie
 float step = 1.0f;
-float ollieStep = .1f;
+float ollieStep = 1.5f;
 
 
 //*************************************************************************************
@@ -514,6 +512,9 @@ static void keyboard_callback( GLFWwindow *window, int key, int scancode, int ac
 			if (action == GLFW_PRESS) hideCage = !hideCage;
 			break;
 		}
+		case GLFW_KEY_T:
+			TESTING();
+			break;
 		case GLFW_KEY_B: {
 			if (action == GLFW_PRESS) hideBezierCurve = !hideBezierCurve;
 			break;
@@ -998,10 +999,11 @@ void updateScene() {
 			camPos.z -= camDir.z*step;
 		}
 	}
-	if(vehiclePos.x > MAX_XZ) vehiclePos.x = MAX_XZ;
-	if(vehiclePos.x < MIN_XZ) vehiclePos.x = MIN_XZ;
-	if(vehiclePos.z > MAX_XZ) vehiclePos.z = MAX_XZ;
-	if(vehiclePos.z < MIN_XZ) vehiclePos.z = MIN_XZ;
+	// values gathered from input file
+	if(vehiclePos.x > xyz_min_max[3]) vehiclePos.x = xyz_min_max[3];
+	if(vehiclePos.x < xyz_min_max[0]) vehiclePos.x = xyz_min_max[0];
+	if(vehiclePos.z > xyz_min_max[5]) vehiclePos.z = xyz_min_max[5];
+	if(vehiclePos.z < xyz_min_max[2]) vehiclePos.z = xyz_min_max[2];
 	if (keyisdown(Astate)) {
 		if(cameraType == 2) {
 			// camPos.x += camDir.x*step;
@@ -1087,7 +1089,7 @@ int main( int argc, char *argv[] ) {
 		return -1;
 	}
 
-	if (!loadRaceTrack(argv[1], &curveCount, &surface, &trackPoints, &track, &objects)) {
+	if (!loadRaceTrack(argv[1], &curveCount, &surface, &trackPoints, &track, &objects, xyz_min_max)) {
 		fprintf(stdout, "Error: invalid data file\n");
 		return -1;
 	}

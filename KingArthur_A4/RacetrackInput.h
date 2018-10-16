@@ -29,7 +29,8 @@ bool loadRaceTrack(char *filename,
                    vector<glm::vec3> *surface, // all surface points
                    int *trackPoints,           // number of track control points
                    vector<glm::vec3> *track,   // track points
-                   vector<Drawable*> *objects) // objects
+                   vector<Drawable*> *objects, // objects
+                   int *xyz_min_max)           // Boundary conditions
 {
     ifstream fin(filename);
     if (fin.fail())
@@ -72,6 +73,8 @@ bool loadRaceTrack(char *filename,
         stringstream s_track(temp);
         s_track >> *trackPoints;
         // Collect all bezier surface points
+        // Manage min/max 
+        // xyz_min_max[6] initial values {100,100,100,0,0,0};
         for (int i = 0; i < (*trackPoints); i++)
         {
             int x, y, z;
@@ -89,6 +92,16 @@ bool loadRaceTrack(char *filename,
             sz >> z;
             glm::vec3 point(x, y, z);
             (*track).push_back(point);
+            // track boundary location
+            int set[3] = {x,y,z};
+            for (int i = 0; i < 3; i++){
+                if (set[i] > xyz_min_max[i+3]){
+                    xyz_min_max[i+3] = set[i];
+                }
+                else if ( set[i] < xyz_min_max[i] ){
+                    xyz_min_max[i] = set[i];
+                }
+            }
         }
         //####################
         //  Object Collection

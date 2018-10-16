@@ -32,8 +32,15 @@ int rainbowBlue = 0;
 float rainbowAlphaValue = 0.2;
 void drawControlPoints(vector<glm::vec3> controlPoints, int resolution);
 void drawBezierCurve(vector<glm::vec3> controlPoints, int resolution);
-bool testing = false;
-
+bool testing = true;
+void TESTING(){
+	if (testing){
+		testing = false;
+	}
+	else {
+		testing = true;
+	}
+}
 /*NOTE:
  * Before or after each FRAME, set rainbowRed to max and rainbowGreen/rainbowBlue to 0.
  * The functions here can not do this or each curve will restart the color set.
