@@ -1,5 +1,18 @@
 #include "Globals.h"
 
+// arcball camera variables
+glm::vec3 camPos;            						// camera position in cartesian coordinates
+float cameraTheta, cameraPhi;               		// camera DIRECTION in spherical coordinates
+glm::vec3 camDir; 			                    	// camera DIRECTION in cartesian coordinates
+bool fpsCam = false;
+
+// ollie camera variablesc
+
+glm::vec3 ollieCamPos;
+float ollieCamTheta, ollieCamPhi;
+glm::vec3 ollieCamDir;
+
+
 // recomputeOrientation() //////////////////////////////////////////////////////
 //
 // This function updates the camera's direction in cartesian coordinates based

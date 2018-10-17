@@ -1,7 +1,13 @@
 #include "Globals.h"
 
+char* fileName;
+int textureWidth, textureHeight;
+int skyWidth, skyHeight;
+unsigned char* imageData;
+unsigned char* skyData;
+
 bool registerOpenGLTexture(unsigned char *textureData,
-                           unsigned int texWidth, unsigned int texHeight,
+                           unsigned int textureWidth, unsigned int textureHeight,
                            GLuint &textureHandle) {
 
     if( textureData == 0 ) {
@@ -21,6 +27,7 @@ bool registerOpenGLTexture(unsigned char *textureData,
     glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, textureWidth, textureHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureData);
     return true;
 }
+
 void setupTextures() {
 
     grassTexHandle =

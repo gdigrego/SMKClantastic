@@ -10,10 +10,11 @@
  *      
  */
 
-// include the OpenGL library header
 
+// include the OpenGL library header
 #include "Globals.h"
 
+// Heroes
 #include "Heroes/Kepler.h"
 #include "Heroes/Hero.h"
 #include "Track.h"
@@ -22,6 +23,7 @@
 #include "Textures.h"
 #include "RacetrackInput.h"
 
+// Function Headers
 #include "Setup.h"
 #include "Event_Handlers.h"
 #include "Bezier.h"
@@ -30,6 +32,84 @@
 using namespace std;
 
 static vector<Drawable*> objects;     // object that are drawable
+
+// GLOBALS 
+
+
+
+float vehicleTheta;
+float wheelPhi;
+float step_size;
+GLuint environmentDL;                       		// display list for the 'city'
+std::vector<glm::vec3> controlPoints;
+int curveResolution;
+int cameraType = 2;
+static bool keysDown[256] = {0};
+glm::vec3 camAngles;
+static int xyz_min_max[6] = {100,100,100,0,0,0};
+// models
+
+Ollie ollie;
+float t = 0;
+int curveNumber = 0;
+glm::vec3 ollieParams;
+glm::vec3 olliePos;
+glm::vec3 ollieDir;
+float ollieTheta;
+glm::vec3 ollieNormal;
+float ollieThetaChange;
+glm::vec3 ollieNormRotAxis;
+
+// THIS IS GOING TO BE UGLY! (but we're in it together)
+int CtrlState, Astate, Wstate, Sstate, Dstate;
+bool hideCage;
+bool hideBezierCurve;
+int upState, leftState, rightState, downState;
+int heroChoice = 4;
+
+glm::mat4 identity = glm::mat4(1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1);
+
+// Rob's Filey bullshit
+char* filename;
+int curveCount;               // number of bezier surfaces
+static vector<glm::vec3> surface;     // all surface points
+int trackPoints;               // number of track control points
+static vector<glm::vec3> track;       // track points
+
+
+
+DarkSlayer ds;
+int hero1TPos = 0;
+int hero1ActiveCurve = 0;
+float hero1RotAngle;
+glm::vec3 hero1PrevAlign(0, 0, 1);
+glm::vec3 hero1RotAxis;
+glm::vec3 hero1Position;
+glm::vec3 hero1Normal;
+glm::vec3 hero1NextPoint;
+
+KingArthur ka;
+float hero2Dist = 0;
+int hero2ActiveCurve = 0;
+float hero2RotAngle;
+glm::vec3 hero2PrevAlign(0, 0, 1);
+glm::vec3 hero2RotAxis;
+glm::vec3 hero2Position;
+glm::vec3 hero2Normal;
+glm::vec3 hero2NextPoint;
+
+float totalDist = 0;
+map<float, float> curveDist;
+
+// step sizes for movement of cam or ollie
+float step = 1.0f;
+float ollieStep = 1.5f;
+
+int leftMouseButton;    	 						// status of the mouse button
+glm::vec2 mousePos;			              		  	// last known X and Y of the mouse
+glm::vec3 vehiclePos, vehicleDir;                   // vehicle position and direction
+float arcballDistance;
+
 
 
 //*************************************************************************************
@@ -138,6 +218,7 @@ void generateEnvironmentDL() {
 	}
 	glEndList();
 }
+
 
 //
 //	void renderScene()
