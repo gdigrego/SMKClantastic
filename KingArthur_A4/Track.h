@@ -1,28 +1,5 @@
-// include the OpenGL library header
-#ifdef __APPLE__				// if compiling on Mac OS
-#include <OpenGL/gl.h>
-#else							// if compiling on Linux or Windows OS
-#include <GL/gl.h>
-#endif
+#include "Globals.h"
 
-#include <GLFW/glfw3.h>			// include GLFW framework header
-
-#include <CSCI441/objects.hpp> // for our 3D objects
-
-// include GLM libraries and matrix functions
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-
-#include <math.h>				// for cos(), sin() functionality
-#include <stdio.h>			// for printf functionality
-#include <stdlib.h>			// for exit functionality
-#include <time.h>			  // for time() functionality
-
-#include <fstream>			// for file I/O
-#include <iostream>
-#include <sstream>
-#include <string>
-#include <vector>				// for vector
 using namespace std;
 
 int rainbowMax = 25;
@@ -139,52 +116,3 @@ void drawTraceSurface(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, in
 	glDisable( GL_BLEND );
 }
 
-float getRand2() { return rand() / (float)RAND_MAX; }
-
-// old possible repeat code
-void drawControlPoints(vector<glm::vec3> controlPoints, int resolution){
-
-	GLfloat sphereSize = 2.0;
-	// I'm just doubling code because I don't have a ton of time
-	for (glm::vec3 elem : controlPoints ){
-		glm::mat4 moveMtx = glm::translate(glm::mat4(), elem);
-		//glPushMatrix();
-		glColor3f( 0.0f, 1.0f, 0.0f );
-		glColor3f( getRand2(), getRand2(), getRand2() );
-		glMultMatrixf(&moveMtx[0][0]);{
-			CSCI441::drawSolidSphere(sphereSize,GLint(10), GLint(100));
-		} glMultMatrixf( &(glm::inverse( moveMtx )[0][0] ));
-		//glPopMatrix();
-	}
-	glLineWidth(3.0f);
-	glBegin(GL_LINE_STRIP);{
-		glColor3f(1.0f,1.0f,0.5f);
-		for (glm::vec3 elem : controlPoints) {
-			glVertex3f(elem.x, elem.y, elem.z);
-		}
-	} glEnd();
-}
-void renderBezierCurve2( glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, int resolution ) {
-    // TODO #05: Draw the Bezier Curve!
-	float t = 0.0;
-	float timing = 1.0 / resolution;
-	glColor3f(0.0f,0.0f,1.0f);
-
-	glBegin(GL_LINE_STRIP);{
-		for (t = 0.0; t < 1.0; t += timing){
-			glm::vec3 point = evaluateBezierCurve(p0,p1,p2,p3,t);
-			glVertex3f( point.x, point.y, point.z );
-		}
-	} glEnd();
-	//glLineWidth(30.0f);
-}
-void drawBezierCurve(vector<glm::vec3> controlPoints, int resolution){
-
-	//glLineWidth(3.0f);
-	for (int i = 0; i < (controlPoints).size() - 1; i+=3) {
-		renderBezierCurve2((controlPoints)[i],
-						(controlPoints)[i+1],
-						(controlPoints)[i+2],
-						(controlPoints)[i+3], resolution);
-	}
-}
